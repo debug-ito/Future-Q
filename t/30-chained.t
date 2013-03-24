@@ -12,6 +12,7 @@ init_warn_handler;
 note("--- Futures chained by followed_by() etc. methods.");
 
 my @cases = (
+    ## ** cases where the chain callback is not executed.
     {label => "fail, and_then, not handled", warn_num => 1, code => sub {
         my $f = newf;
         $f->and_then(sub {
@@ -48,7 +49,7 @@ my @cases = (
 );
 
 foreach my $chain_method (qw(and_then followed_by)) {
-    ## ** Generate cases where it starts from done-future -> execute next callback
+    ## ** cases where it starts from done-future -> execute next callback
     push(@cases,
          {label => "done, $chain_method done", warn_num => 0, code => sub {
              my $f = newf;
@@ -58,6 +59,17 @@ foreach my $chain_method (qw(and_then followed_by)) {
                  return newf->done();
              });
              $f->done;
+             ok($executed, "callback executed.");
+         }},
+         {label => "done, $chain_method returns the original future", warn_num => 0, code => sub {
+             my $f = newf;
+             my $executed = 0;
+             $f->$chain_method(sub {
+                 my $g = shift;
+                 $executed = 1;
+                 return $g;
+             });
+             $f->done();
              ok($executed, "callback executed.");
          }},
          {label => "done, $chain_method fail, not handled", warn_num => 1, code => sub {
@@ -105,7 +117,7 @@ foreach my $chain_method (qw(and_then followed_by)) {
 }
 
 foreach my $chain_method (qw(or_else followed_by)) {
-    ## ** Generate cases where it starts from failed-future -> execute next callback
+    ## ** cases where it starts from failed-future -> execute next callback
     push(@cases,
          {label => "fail, $chain_method handled, done", warn_num => 0, code => sub {
              my $f = newf;
@@ -129,7 +141,43 @@ foreach my $chain_method (qw(or_else followed_by)) {
                  return newf->done;
              });
              ok($executed, "$chain_method callback executed.");
-         }}
+         }},
+         {label => "fail, $chain_method handled, another failure", warn_num => 1, code => sub {
+             my $f = newf;
+             my $handled = 0;
+             $f->$chain_method(sub {
+                 my $g = shift;
+                 $handled = 1;
+                 is($g->failure, "failure", "failure message OK");
+                 return newf->fail("another failure");
+             });
+             $f->fail('failure');
+             ok($handled, "failure handled");
+         }},
+         {label => "fail, $chain_method not handled, another failure", warn_num => 2, code => sub {
+             my $f = newf;
+             $f->fail("failure");
+             $f->$chain_method(sub {
+                 return newf->fail("another failure");
+             });
+         }},
+         {label => "fail, $chain_method not handled, returning the original future", warn_num => 1, code => sub {
+             my $f = newf;
+             $f->$chain_method(sub {
+                 my $g = shift;
+                 return $g;
+             });
+             $f->fail('failure');
+         }},
+         {label => "fail, $chain_method handled, returning the original future", warn_num => 1, code => sub {
+             my $f = newf;
+             $f->fail('failure');
+             $f->$chain_method(sub {
+                 my $g = shift;
+                 is($g->failure, "failure", "failure message OK");
+                 return $g;
+             });
+         }},
      );
     fail("todo: more fail-start and next stop cases");
 }
