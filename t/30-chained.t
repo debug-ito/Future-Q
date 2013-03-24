@@ -111,7 +111,10 @@ foreach my $chain_method (qw(and_then followed_by)) {
                  die "failure";
              });
              $f->done();
-             like($g->failure, qr/^failure/, "failure detected and handled.");
+             $g->on_ready(sub {
+                 my $h = shift;
+                 like($h->failure, qr/^failure/, "failure detected and handled.");
+             });
          }},
          {label => "done, $chain_method returns the original future", warn_num => 0, code => sub {
              my $f = newf;
@@ -142,7 +145,10 @@ foreach my $chain_method (qw(or_else followed_by)) {
              $f->fail("failure");
              ok($handled, "failure handled.");
          }},
-         {label => "fail, $chain_method not handled, done", warn_num => 1, code => sub {
+         {label => "fail, $chain_method not handled, done", warn_num => 0, code => sub {
+             note('In this case, the failure is not actually handled.');
+             note('But Future::Strict treats just executing or_else/followed_by callbacks');
+             note('as handling failures. So be sure to check the results in these callbacks.');
              my $f = newf;
              $f->fail("failure");
              my $executed = 0;
@@ -165,7 +171,9 @@ foreach my $chain_method (qw(or_else followed_by)) {
              $f->fail('failure');
              ok($handled, "failure handled");
          }},
-         {label => "fail, $chain_method not handled, another failure", warn_num => 2, code => sub {
+         {label => "fail, $chain_method not handled, another failure", warn_num => 1, code => sub {
+             note("In this case, Future::Strict thinks the original failure is handled,");
+             note("which is not exactly true.");
              my $f = newf;
              $f->fail("failure");
              $f->$chain_method(sub {
@@ -184,7 +192,9 @@ foreach my $chain_method (qw(or_else followed_by)) {
              });
              ok($handled, "failure handled");
          }},
-         {label => "fail, $chain_method not handled, dies", warn_num => 2, code => sub {
+         {label => "fail, $chain_method not handled, dies", warn_num => 1, code => sub {
+             note("In this case, Future::Strict thinks the original failure is handled,");
+             note("which is not exactly true.");
              my $f = newf;
              $f->$chain_method(sub {
                  die "exception";
@@ -192,6 +202,7 @@ foreach my $chain_method (qw(or_else followed_by)) {
              $f->fail("failure");
          }},
          {label => "fail, $chain_method not handled, returning the original future", warn_num => 1, code => sub {
+             note("Returninig the original failed Future is analogous to re-throwing an exception.");
              my $f = newf;
              $f->$chain_method(sub {
                  my $g = shift;
@@ -227,7 +238,8 @@ foreach my $chain_method (qw(followed_by or_else)) {
              ok($handled, "failure handled");
              $g->cancel;
          }},
-         {label => "fail, $chain_method not handled, cancel before f2 completes", warn_num => 1, code => sub {
+         {label => "fail, $chain_method not handled, cancel before f2 completes", warn_num => 0, code => sub {
+             note("Future::Strict thinks the original failure is handled by executing or_else/followed_by callbacks.");
              my $f = newf;
              $f->fail("failure");
              my $executed = 0;
