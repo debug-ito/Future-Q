@@ -13,8 +13,10 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     PREREQ_PM => {
+        'Future' => '0.11',
         'Devel::GlobalDestruction' => 0,
         'Scalar::Util' => 0,
+        'Carp' => 0,
     },
     BUILD_REQUIRES => {
         'Test::More' => 0,

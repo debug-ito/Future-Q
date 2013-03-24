@@ -1,9 +1,13 @@
 package Future::Strict;
 use strict;
 use warnings;
+use Future 0.11;
 use base "Future";
 use Devel::GlobalDestruction;
-use Scalar::Util qw(refaddr);
+use Scalar::Util qw(refaddr blessed);
+use Carp;
+
+## ** lexical attributes and private functions to avoid collision of names.
 
 my %failure_handled_of = ();
 
@@ -28,14 +32,9 @@ sub DESTROY {
     delete $failure_handled_of{refaddr $self};
 }
 
-sub on_fail {
+sub _mark_as_failure_handled {
     my ($self) = @_;
-    my $super = $self->can('SUPER::on_fail');
-    if(not $is_called_from_outside->()) {
-        goto $super;
-    }
     $failure_handled_of{refaddr $self} = 1;
-    goto $super;
 }
 
 sub failure {
@@ -45,7 +44,7 @@ sub failure {
         goto $super;
     }
     if($self->is_ready) {
-        $failure_handled_of{refaddr $self} = 1;
+        $self->_mark_as_failure_handled();
     }
     goto $super;
 }
@@ -57,8 +56,47 @@ sub get {
         goto $super;
     }
     if($self->is_ready) {
-        $failure_handled_of{refaddr $self} = 1;
+        $self->_mark_as_failure_handled();
     }
+    goto $super;
+}
+
+sub on_fail {
+    my ($self) = @_;
+    my $super = $self->can('SUPER::on_fail');
+    if(not $is_called_from_outside->()) {
+        goto $super;
+    }
+    $self->_mark_as_failure_handled();
+    goto $super;
+}
+
+my $wrap_chain_callback = sub {
+    my ($method_name, $code) = @_;
+    croak "Argument must be a CODE-ref" if !defined($code) || ref($code) ne 'CODE';
+    return sub {
+        my ($next_future) = $code->(@_);
+        if(!blessed($next_future) || !$next_future->isa('Future')) {
+            croak "Return value from $method_name callback must be a Future"
+        }
+        if($next_future->isa('Future::Strict')) {
+            ## ** handling failure of Future from the chain callback is
+            ## ** delegated to the next Future in the chain.
+            $next_future->_mark_as_failure_handled();
+        }
+        return $next_future;
+    };
+};
+
+sub and_then {
+    my ($self, $code) = @_;
+    my $super = $self->can('SUPER::and_then');
+    if(not $is_called_from_outside->()) {
+        goto $super;
+    }
+    ## ** and_then() delegates handling of failure to the next Future in the chain.
+    $self->_mark_as_failure_handled();
+    @_ = ($self, $wrap_chain_callback->('and_then', $code));
     goto $super;
 }
 
