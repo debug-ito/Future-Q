@@ -1,8 +1,15 @@
 package Future::Strict;
-
-use 5.006;
 use strict;
 use warnings;
+use base "Future";
+use Devel::GlobalDestruction;
+
+sub DESTROY {
+    return if in_global_destruction;
+    warn "fail!";
+}
+
+
 
 =head1 NAME
 
@@ -18,6 +25,25 @@ our $VERSION = '0.01';
 
 
 =head1 SYNOPSIS
+
+
+=head1 SEE ALSO
+
+It's very tricky to throw exceptions from destructors, so I decided not to use exceptions
+to report failed and ignored Futures.
+
+=over
+
+=item *
+
+Exception Handling - perl5140delta: L<http://perldoc.perl.org/perl5140delta.html#Exception-Handling>
+
+=item *
+
+Throw from within a DESTROY block - PerlMonks: L<http://www.perlmonks.org/?node_id=924488>
+
+=back
+
 
 
 =head1 AUTHOR
