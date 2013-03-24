@@ -113,6 +113,17 @@ foreach my $chain_method (qw(and_then followed_by)) {
              $f->done();
              like($g->failure, qr/^failure/, "failure detected and handled.");
          }},
+         {label => "done, $chain_method returns the original future", warn_num => 0, code => sub {
+             my $f = newf;
+             my $executed = 0;
+             $f->$chain_method(sub {
+                 my $g = shift;
+                 $executed = 1;
+                 return $f;
+             });
+             $f->done();
+             ok($executed, "callback executed");
+         }}
      );
 }
 
@@ -161,6 +172,25 @@ foreach my $chain_method (qw(or_else followed_by)) {
                  return newf->fail("another failure");
              });
          }},
+         {label => "fail, $chain_method handled, dies", warn_num => 1, code => sub {
+             my $f = newf;
+             $f->fail("failure");
+             my $handled = 0;
+             $f->$chain_method(sub {
+                 my $g = shift;
+                 $handled = 1;
+                 is($g->failure, "failure", "failure message OK");
+                 die "exception";
+             });
+             ok($handled, "failure handled");
+         }},
+         {label => "fail, $chain_method not handled, dies", warn_num => 2, code => sub {
+             my $f = newf;
+             $f->$chain_method(sub {
+                 die "exception";
+             });
+             $f->fail("failure");
+         }},
          {label => "fail, $chain_method not handled, returning the original future", warn_num => 1, code => sub {
              my $f = newf;
              $f->$chain_method(sub {
@@ -179,16 +209,67 @@ foreach my $chain_method (qw(or_else followed_by)) {
              });
          }},
      );
-    fail("todo: more fail-start and next stop cases");
 }
 
+## ** cancel cases
+foreach my $chain_method (qw(followed_by or_else)) {
+    push(@cases,
+         {label =>  "fail, $chain_method handled, cancel before f2 completes", warn_num => 0, code => sub {
+             my $f = newf;
+             my $handled = 0;
+             my $g = $f->$chain_method(sub {
+                 my $h = shift;
+                 $handled = 1;
+                 is($h->failure, "failure", "failure message OK");
+                 return newf;
+             });
+             $f->fail("failure");
+             ok($handled, "failure handled");
+             $g->cancel;
+         }},
+         {label => "fail, $chain_method not handled, cancel before f2 completes", warn_num => 1, code => sub {
+             my $f = newf;
+             $f->fail("failure");
+             my $executed = 0;
+             my $g = $f->$chain_method(sub {
+                 $executed = 1;
+                 return newf;
+             });
+             ok($executed, "callback executed");
+             $g->cancel;
+         }}
+     );
+}
+
+## ** transform() method
+push(@cases,
+     {label => "done, transform", warn_num => 0, code => sub {
+         my $f = newf;
+         my $g = $f->transform(done => sub {});
+         $f->done("a");
+     }},
+     {label => "fail, transform, not handled", warn_num => 1, code => sub {
+         my $f = newf;
+         $f->fail("failure");
+         my $g = $f->transform(fail => sub { uc shift });
+     }},
+     {label => "fail, transform, handled", warn_num => 0, code => sub {
+         my $f = newf;
+         my $handled = 0;
+         $f->transform(fail => sub { uc shift })->on_ready(sub {
+             my $g = shift;
+             if($g->failure) {
+                 $handled = 1;
+                 is($g->failure, "FAILURE", "failure message OK");
+             }
+         });
+         $f->fail("failure");
+     }},
+ );
 
 foreach my $case (@cases) {
     note("--- -- Try: $case->{label}");
     test_log_num($case->{code}, $case->{warn_num}, "$case->{label}: expected $case->{warn_num} warnings");
 }
-
-fail("todo: or_else (and other?) callback returning the original Future.");
-fail("todo: fail in the callback by exception.");
 
 done_testing();
