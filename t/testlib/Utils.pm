@@ -15,6 +15,7 @@ sub newf {
 }
 
 sub init_warn_handler {
+    delete $ENV{PERL_FUTURE_DEBUG};
     $SIG{__WARN__} = sub {
         push(@logs, shift);
     };
