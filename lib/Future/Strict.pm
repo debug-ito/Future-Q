@@ -3,12 +3,64 @@ use strict;
 use warnings;
 use base "Future";
 use Devel::GlobalDestruction;
+use Scalar::Util qw(refaddr);
 
-sub DESTROY {
-    return if in_global_destruction;
-    warn "fail!";
+my %failure_handled_of = ();
+
+my $is_called_from_outside = sub {
+    my $caller_package = caller(1);
+    return $caller_package ne 'Future' && $caller_package ne 'Future::Strict';
+};
+
+sub new {
+    my ($class, @args) = @_;
+    my $self = $class->SUPER::new(@args);
+    $failure_handled_of{refaddr $self} = 0;
+    return $self;
 }
 
+sub DESTROY {
+    my ($self) = @_;
+    return if in_global_destruction;
+    if($self->is_ready && $self->failure && !$failure_handled_of{refaddr $self}) {
+        warn "failure not handled: " . $self->failure;
+    }
+    delete $failure_handled_of{refaddr $self};
+}
+
+sub on_fail {
+    my ($self) = @_;
+    my $super = $self->can('SUPER::on_fail');
+    if(not $is_called_from_outside->()) {
+        goto $super;
+    }
+    $failure_handled_of{refaddr $self} = 1;
+    goto $super;
+}
+
+sub failure {
+    my ($self) = @_;
+    my $super = $self->can('SUPER::failure');
+    if(not $is_called_from_outside->()) {
+        goto $super;
+    }
+    if($self->is_ready) {
+        $failure_handled_of{refaddr $self} = 1;
+    }
+    goto $super;
+}
+
+sub get {
+    my ($self) = @_;
+    my $super = $self->can('SUPER::get');
+    if(not $is_called_from_outside->()) {
+        goto $super;
+    }
+    if($self->is_ready) {
+        $failure_handled_of{refaddr $self} = 1;
+    }
+    goto $super;
+}
 
 
 =head1 NAME
