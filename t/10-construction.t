@@ -36,7 +36,31 @@ foreach my $method (qw(followed_by and_then or_else)) {
 }
 
 {
-    fail('TODO: Future::Util::repeat() should return Future::Strict');
+    my $ef = repeat {
+        return Future::Strict->new->done;
+    } while => sub { 0 };
+    isa_ok($ef, 'Future::Strict', 'repeat() "while" should return Future::Strict');
+}
+
+{
+    my $ef = repeat {
+        return Future::Strict->new->done;
+    } until => sub { 1 };
+    isa_ok($ef, 'Future::Strict', 'repeat() "unless" should return Future::Strict');
+}
+
+foreach my $items ([], [1], [1,2,3]){
+    my $size = @$items;
+    my $ef = repeat {
+        return Future::Strict->new->done;
+    } foreach => $items;
+    isa_ok($ef, 'Future::Strict', "repeat() \"foreach\" with items size = $size should return Future::Strict");
+}
+
+foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
+    my @subf = map { Future::Strict->new } (1..3);
+    my $f = Future::Strict->$method(@subf);
+    isa_ok($f, 'Future::Strict', "$method() should return Future::Strict");
 }
 
 done_testing();
