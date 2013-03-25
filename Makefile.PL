@@ -22,6 +22,7 @@ WriteMakefile(
     BUILD_REQUIRES => {
         'Test::More' => 0,
         'FindBin' => 0,
+        'Carp' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Future-Strict-*' },
