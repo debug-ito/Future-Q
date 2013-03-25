@@ -17,6 +17,7 @@ WriteMakefile(
         'Devel::GlobalDestruction' => 0,
         'Scalar::Util' => 0,
         'Carp' => 0,
+        'Try::Tiny' => 0,
     },
     BUILD_REQUIRES => {
         'Test::More' => 0,

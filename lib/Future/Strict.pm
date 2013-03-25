@@ -6,8 +6,9 @@ use base "Future";
 use Devel::GlobalDestruction;
 use Scalar::Util qw(refaddr blessed);
 use Carp;
+use Try::Tiny;
 
-## ** lexical attributes and private functions to avoid collision of names.
+## ** lexical attributes to avoid collision of names.
 
 my %catcher_callback_set_of = ();
 
@@ -24,9 +25,24 @@ sub DESTROY {
     return if in_global_destruction;
     my $id = refaddr $self;
     if($self->is_ready && $self->failure && !$catcher_callback_set_of{$id}) {
-        warn "failure not handled: " . $self->failure;
+        $self->_warn_failure();
+        my @failed_subfutures = try {
+            $self->failed_futures;
+        }catch {
+            ()
+        };
+        foreach my $f (@failed_subfutures) {
+            $f->_warn_failure();
+        }
     }
     delete $catcher_callback_set_of{$id};
+}
+
+sub _warn_failure {
+    my ($self) = @_;
+    if($self->is_ready && $self->failure) {
+        warn "failure not handled: " . $self->failure;
+    }
 }
 
 sub on_fail {

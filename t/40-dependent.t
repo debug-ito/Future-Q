@@ -65,7 +65,7 @@ my @cases = (
         $wf->on_fail(sub {
             my $e = shift;
             $handled = 1;
-            is($e, "failure 1", "failure message OK");
+            like($e, qr/^failure/, "failure message OK");
         });
         ok($handled, "failure handled.");
     }},
