@@ -57,6 +57,24 @@ our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
+=head1 CAVEAT
+
+(MEMO)
+
+If you don't want to miss failed Futures, you should do the following.
+
+=over
+
+=item *
+
+In callbacks for on_ready(), or_else() and followed_by() methods, always inspect the result with get() or failure() method.
+
+=item *
+
+In callbacks for dependent Futures returned by wait_all(), wait_any(), needs_all() and needs_any(),
+always inspect failed subfutures by failed_futures() method. There may be multiple of them.
+
+=back
 
 =head1 SEE ALSO
 
