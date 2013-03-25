@@ -2,7 +2,6 @@ use strict;
 use warnings;
 use Test::More;
 use Future::Strict;
-use Try::Tiny;
 use FindBin;
 use lib ("$FindBin::Bin");
 use testlib::Utils qw(newf init_warn_handler test_log_num);
