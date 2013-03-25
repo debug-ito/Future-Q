@@ -94,6 +94,10 @@ our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
+=head1 DESCRIPTION
+
+(MEMO): Carp verbose makes it show full stack trace.
+
 =head1 CAVEAT
 
 (MEMO)
