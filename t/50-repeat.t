@@ -46,21 +46,24 @@ sub while_loop {
     my ($self, $loop_count) = @_;
     return repeat {
         $self->next;
-    } while => sub { $self->count < $loop_count };
+    } while => sub { $self->count < $loop_count },
+        return => Future::Strict->new;
 }
 
 sub until_loop {
     my ($self, $loop_count) = @_;
     return repeat {
         $self->next;
-    } until => sub { $self->count >= $loop_count };
+    } until => sub { $self->count >= $loop_count },
+        return => Future::Strict->new;
 }
 
 sub foreach_loop {
     my ($self, $loop_count) = @_;
     return repeat {
         $self->next;
-    } foreach => [1 .. $loop_count];
+    } foreach => [1 .. $loop_count],
+        return => Future::Strict->new;
 }
 
 package main;
