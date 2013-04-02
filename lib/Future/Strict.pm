@@ -1,7 +1,7 @@
 package Future::Strict;
 use strict;
 use warnings;
-use Future 0.11;
+use Future 0.12;
 use base "Future";
 use Devel::GlobalDestruction;
 use Scalar::Util qw(refaddr blessed);

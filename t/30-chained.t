@@ -14,7 +14,7 @@ my @cases = (
     ## ** cases where the chain callback is not executed.
     {label => "fail, and_then, not handled", warn_num => 1, code => sub {
         my $f = newf;
-        $f->and_then(sub {
+        my $nf = $f->and_then(sub {
             fail('This should not be executed.');
             return newf->done();
         });
@@ -39,7 +39,7 @@ my @cases = (
         my $f = newf;
         $f->done;
         my $executed = 0;
-        $f->or_else(sub {
+        my $nf = $f->or_else(sub {
             $executed = 1;
             return newf->done;
         });
@@ -53,7 +53,7 @@ foreach my $chain_method (qw(and_then followed_by)) {
          {label => "done, $chain_method done", warn_num => 0, code => sub {
              my $f = newf;
              my $executed = 0;
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  $executed = 1;
                  return newf->done();
              });
@@ -63,7 +63,7 @@ foreach my $chain_method (qw(and_then followed_by)) {
          {label => "done, $chain_method returns the original future", warn_num => 0, code => sub {
              my $f = newf;
              my $executed = 0;
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  my $g = shift;
                  $executed = 1;
                  return $g;
@@ -74,7 +74,7 @@ foreach my $chain_method (qw(and_then followed_by)) {
          {label => "done, $chain_method fail, not handled", warn_num => 1, code => sub {
              my $f = newf;
              my $executed = 0;
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  $executed = 1;
                  return newf->fail('failure');
              });
@@ -86,7 +86,7 @@ foreach my $chain_method (qw(and_then followed_by)) {
              $f->done();
              my $executed = 0;
              my $handled = 0;
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  $executed = 1;
                  return newf->fail('failure');
              })->on_ready(sub {
@@ -99,7 +99,7 @@ foreach my $chain_method (qw(and_then followed_by)) {
          }},
          {label => "done, $chain_method dies, not handled", warn_num => 1, code => sub {
              my $f = newf;
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  die "failure";
              });
              $f->done();
@@ -118,7 +118,7 @@ foreach my $chain_method (qw(and_then followed_by)) {
          {label => "done, $chain_method returns the original future", warn_num => 0, code => sub {
              my $f = newf;
              my $executed = 0;
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  my $g = shift;
                  $executed = 1;
                  return $f;
@@ -135,7 +135,7 @@ foreach my $chain_method (qw(or_else followed_by)) {
          {label => "fail, $chain_method handled, done", warn_num => 0, code => sub {
              my $f = newf;
              my $handled = 0;
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  my $g = shift;
                  is($g->failure, "failure", "failure message OK");
                  $handled = 1;
@@ -151,7 +151,7 @@ foreach my $chain_method (qw(or_else followed_by)) {
              my $f = newf;
              $f->fail("failure");
              my $executed = 0;
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  my $g = shift;
                  $executed = 1;
                  return newf->done;
@@ -161,7 +161,7 @@ foreach my $chain_method (qw(or_else followed_by)) {
          {label => "fail, $chain_method handled, another failure", warn_num => 1, code => sub {
              my $f = newf;
              my $handled = 0;
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  my $g = shift;
                  $handled = 1;
                  is($g->failure, "failure", "failure message OK");
@@ -175,7 +175,7 @@ foreach my $chain_method (qw(or_else followed_by)) {
              note("which is not exactly true.");
              my $f = newf;
              $f->fail("failure");
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  return newf->fail("another failure");
              });
          }},
@@ -183,7 +183,7 @@ foreach my $chain_method (qw(or_else followed_by)) {
              my $f = newf;
              $f->fail("failure");
              my $handled = 0;
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  my $g = shift;
                  $handled = 1;
                  is($g->failure, "failure", "failure message OK");
@@ -195,7 +195,7 @@ foreach my $chain_method (qw(or_else followed_by)) {
              note("In this case, Future::Strict thinks the original failure is handled,");
              note("which is not exactly true.");
              my $f = newf;
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  die "exception";
              });
              $f->fail("failure");
@@ -203,7 +203,7 @@ foreach my $chain_method (qw(or_else followed_by)) {
          {label => "fail, $chain_method not handled, returning the original future", warn_num => 1, code => sub {
              note("Returninig the original failed Future is analogous to re-throwing an exception.");
              my $f = newf;
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  my $g = shift;
                  return $g;
              });
@@ -212,7 +212,7 @@ foreach my $chain_method (qw(or_else followed_by)) {
          {label => "fail, $chain_method handled, returning the original future", warn_num => 1, code => sub {
              my $f = newf;
              $f->fail('failure');
-             $f->$chain_method(sub {
+             my $nf = $f->$chain_method(sub {
                  my $g = shift;
                  is($g->failure, "failure", "failure message OK");
                  return $g;
