@@ -1,4 +1,4 @@
-Future-Strict
+Future-Q
 
 The README is used to introduce the module and provide instructions on
 how to install the module, any machine dependencies it may have (for
@@ -26,21 +26,21 @@ SUPPORT AND DOCUMENTATION
 After installing, you can find documentation for this module with the
 perldoc command.
 
-    perldoc Future::Strict
+    perldoc Future::Q
 
 You can also look for information at:
 
     RT, CPAN's request tracker (report bugs here)
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Future-Strict
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Future-Q
 
     AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/Future-Strict
+        http://annocpan.org/dist/Future-Q
 
     CPAN Ratings
-        http://cpanratings.perl.org/d/Future-Strict
+        http://cpanratings.perl.org/d/Future-Q
 
     Search CPAN
-        http://search.cpan.org/dist/Future-Strict/
+        http://search.cpan.org/dist/Future-Q/
 
 
 LICENSE AND COPYRIGHT

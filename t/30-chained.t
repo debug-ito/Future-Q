@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Future::Strict;
+use Future::Q;
 use FindBin;
 use lib ("$FindBin::Bin");
 use testlib::Utils qw(newf init_warn_handler test_log_num);
@@ -146,7 +146,7 @@ foreach my $chain_method (qw(or_else followed_by)) {
          }},
          {label => "fail, $chain_method not handled, done", warn_num => 0, code => sub {
              note('In this case, the failure is not actually handled.');
-             note('But Future::Strict treats just executing or_else/followed_by callbacks');
+             note('But Future::Q treats just executing or_else/followed_by callbacks');
              note('as handling failures. So be sure to check the results in these callbacks.');
              my $f = newf;
              $f->fail("failure");
@@ -171,7 +171,7 @@ foreach my $chain_method (qw(or_else followed_by)) {
              ok($handled, "failure handled");
          }},
          {label => "fail, $chain_method not handled, another failure", warn_num => 1, code => sub {
-             note("In this case, Future::Strict thinks the original failure is handled,");
+             note("In this case, Future::Q thinks the original failure is handled,");
              note("which is not exactly true.");
              my $f = newf;
              $f->fail("failure");
@@ -192,7 +192,7 @@ foreach my $chain_method (qw(or_else followed_by)) {
              ok($handled, "failure handled");
          }},
          {label => "fail, $chain_method not handled, dies", warn_num => 1, code => sub {
-             note("In this case, Future::Strict thinks the original failure is handled,");
+             note("In this case, Future::Q thinks the original failure is handled,");
              note("which is not exactly true.");
              my $f = newf;
              my $nf = $f->$chain_method(sub {
@@ -238,7 +238,7 @@ foreach my $chain_method (qw(followed_by or_else)) {
              $g->cancel;
          }},
          {label => "fail, $chain_method not handled, cancel before f2 completes", warn_num => 0, code => sub {
-             note("Future::Strict thinks the original failure is handled by executing or_else/followed_by callbacks.");
+             note("Future::Q thinks the original failure is handled by executing or_else/followed_by callbacks.");
              my $f = newf;
              $f->fail("failure");
              my $executed = 0;

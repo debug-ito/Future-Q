@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Future::Strict;
+use Future::Q;
 use Try::Tiny;
 use FindBin;
 use lib ("$FindBin::Bin");

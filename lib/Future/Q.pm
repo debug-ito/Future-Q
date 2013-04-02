@@ -1,4 +1,4 @@
-package Future::Strict;
+package Future::Q;
 use strict;
 use warnings;
 use Future 0.12;
@@ -83,7 +83,7 @@ foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
 
 =head1 NAME
 
-Future::Strict - a strict future that will complain when it fails and is not handled.
+Future::Q - a strict future that will complain when it fails and is not handled.
 
 =head1 VERSION
 
@@ -96,10 +96,10 @@ our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
-    use Future::Strict;
+    use Future::Q;
     
     sub async_func_future {
-        my $f = Future::Strict->new;
+        my $f = Future::Q->new;
         ## Assume other_async_func() always fails
         other_async_func(
             on_success => sub { $f->done(@_) },
@@ -134,15 +134,15 @@ our $VERSION = '0.01';
 
 =head1 DESCRIPTION
 
-L<Future::Strict> is a subclass of L<Future>.
+L<Future::Q> is a subclass of L<Future>.
 It extends the original L<Future> so that it warns you
-when a L<Future::Strict> object in the failure state is
+when a L<Future::Q> object in the failure state is
 destroyed but its failure has never been handled.
 
 
-=head2 What's the benefit of Future::Strict?
+=head2 What's the benefit of Future::Q?
 
-The benefit of using L<Future::Strict> instead of regular L<Future>
+The benefit of using L<Future::Q> instead of regular L<Future>
 is that it can detect the possibly dangerous situation when
 a future fails but its failure is never handled.
 
@@ -157,10 +157,10 @@ not in its result, you are very likely to write CASE 1, that is, just throwing a
 returned future. Or if you are too lazy to set the failure handler, you will probably
 write CASE 2. In both cases, the returned failure is discarded.
 
-If this happens with L<Future::Strict>, it prints warning message
+If this happens with L<Future::Q>, it prints warning message
 to motivate you to handle the failures properly.
 
-L<Future::Strict> is even more beneficial when you use chaining methods such as C<and_then()>.
+L<Future::Q> is even more beneficial when you use chaining methods such as C<and_then()>.
 This is because as of L<Future> 0.11 B<< exceptions thrown in callbacks for C<and_then()>, C<or_else>
 and C<followed_by()> are caught and transformed into failed futures. >>
 
@@ -168,26 +168,26 @@ For example, the following code seems to involve no failed future.
 
     {
         ### CASE 4: It complains (if bad_func() throws an exception)
-        my $f_result = Future::Strict->new->done("start")->and_then(sub {
+        my $f_result = Future::Q->new->done("start")->and_then(sub {
             my $f = shift;
             my $result = bad_func($f->get);
-            return Future::Strict->new->done($result);
+            return Future::Q->new->done($result);
         });
     }
 
 However, if C<bad_func()> throws an exception, it is silently transformed into a failed future.
 As a result, C<$f_result> becomes a failed future.
 If you just discard C<$f_result> like this example, the exception is never handled.
-What's worse, if you don't use L<Future::Strict>, the exception is never visible to you,
+What's worse, if you don't use L<Future::Q>, the exception is never visible to you,
 which can lead to very hard-to-track bugs.
 
-L<Future::Strict> makes failed futures visible to you.
-With L<Future::Strict> you will not miss unexpected failed futures in most cases.
+L<Future::Q> makes failed futures visible to you.
+With L<Future::Q> you will not miss unexpected failed futures in most cases.
 
 
-=head2 When and how does a Future::Strict complain?
+=head2 When and how does a Future::Q complain?
 
-A failed L<Future::Strict> object prints warning messages when it is destroyed.
+A failed L<Future::Q> object prints warning messages when it is destroyed.
 
 The warning messages are printed through Perl's warning facility.
 You can capture them by setting C<< $SIG{__WARN__}. >>
@@ -195,12 +195,12 @@ The warning messages can be evaluated to strings.
 (They ARE strings actually, but this may change in future versions)
 
 
-=head2 How can I convince a Future::Strict that its failure is handled?
+=head2 How can I convince a Future::Q that its failure is handled?
 
-To prevent a failed L<Future::Strict> from complaining,
+To prevent a failed L<Future::Q> from complaining,
 you have to convince it that its failure is handled before it's destroyed.
 
-L<Future::Strict> thinks failures of the following futures are handled.
+L<Future::Q> thinks failures of the following futures are handled.
 
 =over
 
@@ -236,7 +236,7 @@ If you don't want to miss failed futures, I recommend you to follow the guidelin
 
 Do not use C<on_ready()> or C<followed_by()> method unless it's absolutely necessary.
 In callbacks for these methods you may forget to handle failures,
-but L<Future::Strict> thinks they are handled.
+but L<Future::Q> thinks they are handled.
 
 
 =item *
@@ -253,7 +253,7 @@ It is even possible that some subfutures fail but the dependent future succeeds.
 
 =head1 METHODS
 
-L<Future::Strict> inherits all the class and object methods from L<Future>.
+L<Future::Q> inherits all the class and object methods from L<Future>.
 There is no extra public method.
 
 =head1 SEE ALSO
@@ -283,4 +283,4 @@ See http://dev.perl.org/licenses/ for more information.
 =cut
 
 
-1; # End of Future::Strict
+1; # End of Future::Q

@@ -2,7 +2,7 @@ package testlib::Generator;
 use strict;
 use warnings;
 use Carp;
-use Future::Strict;
+use Future::Q;
 use Future::Utils qw(repeat);
 
 sub new {
@@ -15,10 +15,10 @@ sub new {
         count => 0
     }, $class;
     if($method eq 'done') {
-        push(@{$self->{futures}}, map { Future::Strict->new->done($_) } 1..$num);
+        push(@{$self->{futures}}, map { Future::Q->new->done($_) } 1..$num);
         $self->{last_state} = "fail";
     }elsif($method eq 'fail') {
-        push(@{$self->{futures}}, map { Future::Strict->new->fail($_) } 1..$num);
+        push(@{$self->{futures}}, map { Future::Q->new->fail($_) } 1..$num);
         $self->{last_state} = "done";
     }else {
         croak "method must be done or fail";
@@ -35,7 +35,7 @@ sub next {
     $self->{count}++;
     my $method = $self->{last_state};
     return @{$self->{futures}} ? shift(@{$self->{futures}})
-        : Future::Strict->new->$method($self->{count});
+        : Future::Q->new->$method($self->{count});
 }
 
 sub count {
@@ -47,7 +47,7 @@ sub while_loop {
     return repeat {
         $self->next;
     } while => sub { $self->count < $loop_count },
-        return => Future::Strict->new;
+        return => Future::Q->new;
 }
 
 sub until_loop {
@@ -55,7 +55,7 @@ sub until_loop {
     return repeat {
         $self->next;
     } until => sub { $self->count >= $loop_count },
-        return => Future::Strict->new;
+        return => Future::Q->new;
 }
 
 sub foreach_loop {
@@ -63,14 +63,14 @@ sub foreach_loop {
     return repeat {
         $self->next;
     } foreach => [1 .. $loop_count],
-        return => Future::Strict->new;
+        return => Future::Q->new;
 }
 
 package main;
 use strict;
 use warnings;
 use Test::More;
-use Future::Strict;
+use Future::Q;
 use FindBin;
 use lib ("$FindBin::Bin");
 use testlib::Utils qw(newf init_warn_handler test_log_num);

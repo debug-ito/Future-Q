@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Future::Strict;
+use Future::Q;
 use FindBin;
 use lib ("$FindBin::Bin");
 use testlib::Utils qw(newf init_warn_handler test_log_num);
@@ -10,7 +10,7 @@ use Carp;
 init_warn_handler;
 
 sub create_future {
-    return Future::Strict->new;
+    return Future::Q->new;
 }
 
 sub fail_future {
@@ -43,11 +43,11 @@ $Carp::Verbose = 0;
 
 sub create_subfuture {
     my $msg = shift;
-    return Future::Strict->new->die($msg);
+    return Future::Q->new->die($msg);
 }
 
 sub call_wait_any {
-    return Future::Strict->wait_any(
+    return Future::Q->wait_any(
         map { create_subfuture($_) } qw(one two three)
     );
 }

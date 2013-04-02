@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Future::Strict;
+use Future::Q;
 use FindBin;
 use lib ("$FindBin::Bin");
 use testlib::Utils qw(newf init_warn_handler test_log_num);
@@ -18,7 +18,7 @@ note("---   warn about all the failed subfutures.");
 my @cases = (
     {label => "wait_all, some of the subfutures fail", warn_num => 0, code => sub {
         my @sub = map { newf } 1..5;
-        my $wf = Future::Strict->wait_all(@sub);
+        my $wf = Future::Q->wait_all(@sub);
         $sub[0]->fail("failure 0");
         $sub[1]->done();
         $sub[2]->fail("failure 2");
@@ -31,13 +31,13 @@ my @cases = (
     {label => "wait_all, all of the subfutures fail", warn_num => 0, code => sub {
         note("wait_all never fails us !!");
         my @sub = map { newf->fail("failure $_") } 1..5;
-        my $wf = Future::Strict->wait_all(@sub);
+        my $wf = Future::Q->wait_all(@sub);
         ok($wf->is_ready, "dependent future is ready.");
         ok(!$wf->failure, "... and it's resolved.");
     }},
     {label => "wait_any, single done", warn_num => 0, code => sub {
         my @sub = map { newf } 1..5;
-        my $wf = Future::Strict->wait_any(@sub);
+        my $wf = Future::Q->wait_any(@sub);
         $sub[0]->done;
         ok($wf->is_ready, "dependent future is ready");
         ok(!$wf->failure, "... and it's resolved.");
@@ -45,7 +45,7 @@ my @cases = (
     {label => "wait_any, single fail", warn_num => 2, code => sub {
         note("In this case, there are two warnings (about the depedent future and the failed subfuture.)");
         my @sub = map { newf } 1..5;
-        my $wf = Future::Strict->wait_any(@sub);
+        my $wf = Future::Q->wait_any(@sub);
         $sub[3]->fail("failure 3");
         ok($wf->is_ready, "dependent future is ready");
         is(scalar($wf->failure), "failure 3", "... and it's failed with 'failure 3'");
@@ -53,14 +53,14 @@ my @cases = (
     {label => "wait_any, all immediate fail", warn_num => 6, code => sub {
         note("In this case, one warning for the dependent future and five for the subfutures.");
         my @sub = map { newf->fail("failure $_") } 1..5;
-        my $wf = Future::Strict->wait_any(@sub);
+        my $wf = Future::Q->wait_any(@sub);
         ok($wf->is_ready, "dependent future is ready");
         like(scalar($wf->failure), qr/^failure/, "... and it's failed with one of the failures.");
     }},
     {label => "wait_any, all immediate fail, handled", warn_num => 0, code => sub {
         note("All the failed futures are considered handled if you handle the failed dependent future.");
         my @sub = map { newf->fail("failure $_") } 1..5;
-        my $wf = Future::Strict->wait_any(@sub);
+        my $wf = Future::Q->wait_any(@sub);
         my $handled = 0;
         $wf->on_fail(sub {
             my $e = shift;
@@ -71,14 +71,14 @@ my @cases = (
     }},
     {label => "needs_all, all done", warn_num => 0, code => sub {
         my @sub = map { newf } 1..5;
-        my $wf = Future::Strict->needs_all(@sub);
+        my $wf = Future::Q->needs_all(@sub);
         ok(!$wf->is_ready, "dependent future is not ready");
         $_->done foreach @sub;
         ok(!$wf->failure, "dependent future is success");
     }},
     {label => "needs_all, some done, single failure, not handled", warn_num => 2, code => sub {
         my @sub = map { newf } 1..5;
-        my $wf = Future::Strict->needs_all(@sub)->on_done(sub {
+        my $wf = Future::Q->needs_all(@sub)->on_done(sub {
             fail('This should not be executed.');
         });
         $_->done foreach @sub[0..3];
@@ -89,7 +89,7 @@ my @cases = (
     {label => "needs_all, some done, single failure, handled", warn_num => 0, code => sub {
         my @sub = map { newf } 1..5;
         my $handled = 0;
-        my $wf; $wf = Future::Strict->needs_all(@sub)->on_done(sub {
+        my $wf; $wf = Future::Q->needs_all(@sub)->on_done(sub {
             fail("This should not be executed.");
         })->on_fail(sub {
             my $e = shift;
@@ -106,7 +106,7 @@ my @cases = (
         note("One warning for the dependent future, three for the subfutures");
         my @sub = map { $_ <= 3 ? newf->fail("failure $_") : newf->done($_) } 1..5;
         try {
-            my $wf = Future::Strict->needs_all(@sub);
+            my $wf = Future::Q->needs_all(@sub);
             is(scalar($wf->failure), "failure 1", "dependent future is failure. Message OK");
         }catch {
             my $e = shift;
@@ -116,7 +116,7 @@ my @cases = (
     {label => "needs_all, immediate multiple failed futures, handled", warn_num => 0, code => sub {
         my @sub = map { $_ <= 3 ? newf->fail("failure $_") : newf->done($_) } 1..5;
         try {
-            my $wf = Future::Strict->needs_all(@sub);
+            my $wf = Future::Q->needs_all(@sub);
             my $handled = 0;
             $wf->on_ready(sub {
                 my $f = shift;
@@ -137,7 +137,7 @@ my @cases = (
     {label => "needs_any, some failed, single succeeded", warn_num => 0, code => sub {
         note("In this case, the failed subfutures are ignored because the dependent future succeeds.");
         my @sub = map { newf } 1..5;
-        my $wf = Future::Strict->needs_any(@sub);
+        my $wf = Future::Q->needs_any(@sub);
         ok(!$wf->is_ready, "depedent future is not ready");
         $sub[0]->fail("failure 0");
         $sub[1]->fail("failure 1");
@@ -148,7 +148,7 @@ my @cases = (
     }},
     {label => "needs_any, all failed, not handled", warn_num => 6, code => sub {
         my @sub = map { newf } 1..5;
-        my $wf = Future::Strict->needs_any(@sub)->on_done(sub {
+        my $wf = Future::Q->needs_any(@sub)->on_done(sub {
             fail("this should not be executed");
         });
         $sub[$_]->fail("failure $_") foreach 0 .. $#sub;
@@ -157,7 +157,7 @@ my @cases = (
     {label => "needs_any, all failed, handled", warn_num => 0, code => sub {
         my @sub = map { newf } 1..5;
         my $handled = 0;
-        my $wf; $wf = Future::Strict->needs_any(@sub)->on_done(sub {
+        my $wf; $wf = Future::Q->needs_any(@sub)->on_done(sub {
             fail("this should not be executed");
         })->on_fail(sub {
             my $e = shift;
@@ -188,7 +188,7 @@ foreach my $case (@cases) {
             ? ((map { newf->done($_) } 1,2), (map { newf->fail("failure $_") } 1,2,3))
             : ((map { newf->fail("failure $_") } 1,2,3), (map { newf->done($_) } 1,2));
         @logs = ();
-        my $wf = Future::Strict->wait_any(@sub);
+        my $wf = Future::Q->wait_any(@sub);
         ok($wf->is_ready, "dependent future is ready");
         is(int($wf->failed_futures), 3, "3 failed futures.");
         if(not $wf->failure) {

@@ -4,10 +4,10 @@ use warnings;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-    NAME                => 'Future::Strict',
+    NAME                => 'Future::Q',
     AUTHOR              => q{Toshio Ito <toshioito@cpan.org>},
-    VERSION_FROM        => 'lib/Future/Strict.pm',
-    ABSTRACT_FROM       => 'lib/Future/Strict.pm',
+    VERSION_FROM        => 'lib/Future/Q.pm',
+    ABSTRACT_FROM       => 'lib/Future/Q.pm',
     ($ExtUtils::MakeMaker::VERSION >= 6.3002
       ? ('LICENSE'=> 'perl')
       : ()),
@@ -25,5 +25,5 @@ WriteMakefile(
         'Carp' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
-    clean               => { FILES => 'Future-Strict-*' },
+    clean               => { FILES => 'Future-Q-*' },
 );

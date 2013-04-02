@@ -2,7 +2,7 @@ package testlib::Utils;
 use strict;
 use warnings;
 use Exporter qw(import);
-use Future::Strict;
+use Future::Q;
 use Test::Builder;
 use Test::More;
 
@@ -11,7 +11,7 @@ our @EXPORT_OK = qw(newf init_warn_handler test_log_num);
 my @logs = ();
 
 sub newf {
-    return Future::Strict->new;
+    return Future::Q->new;
 }
 
 sub init_warn_handler {
