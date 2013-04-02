@@ -10,13 +10,13 @@ use Try::Tiny;
 
 ## ** lexical attributes to avoid collision of names.
 
-my %catcher_callback_set_of = ();
+my %failure_handled_for = ();
 
 sub new {
     my ($class, @args) = @_;
     my $self = $class->SUPER::new(@args);
     my $id = refaddr $self;
-    $catcher_callback_set_of{$id} = 0;
+    $failure_handled_for{$id} = 0;
     return $self;
 }
 
@@ -24,7 +24,7 @@ sub DESTROY {
     my ($self) = @_;
     return if in_global_destruction;
     my $id = refaddr $self;
-    if($self->is_ready && $self->failure && !$catcher_callback_set_of{$id}) {
+    if($self->is_ready && $self->failure && !$failure_handled_for{$id}) {
         $self->_warn_failure();
         my @failed_subfutures = try {
             $self->failed_futures;
@@ -35,7 +35,12 @@ sub DESTROY {
             $f->_warn_failure(is_subfuture => 1) if blessed($f) && $f->can('_warn_failure');
         }
     }
-    delete $catcher_callback_set_of{$id};
+    delete $failure_handled_for{$id};
+}
+
+sub _set_failure_handled {
+    my ($self) = @_;
+    $failure_handled_for{refaddr $self} = 1;
 }
 
 sub _warn_failure {
@@ -52,14 +57,27 @@ sub _warn_failure {
 
 sub on_fail {
     my ($self) = @_;
-    $catcher_callback_set_of{refaddr $self} = 1;
+    $self->_set_failure_handled();
     goto $self->can('SUPER::on_fail');
 }
 
 sub on_ready {
     my ($self) = @_;
-    $catcher_callback_set_of{refaddr $self} = 1;
+    $self->_set_failure_handled();
     goto $self->can('SUPER::on_ready');
+}
+
+foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
+    no strict "refs";
+    my $supermethod = "SUPER::$method";
+    *{$method} = sub {
+        my ($self, @subfutures) = @_;
+        foreach my $sub (@subfutures) {
+            next if !blessed($sub) || !$sub->can('_set_failure_handled');
+            $sub->_set_failure_handled();
+        }
+        goto $self->can($supermethod);
+    };
 }
 
 
