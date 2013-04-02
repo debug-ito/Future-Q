@@ -38,14 +38,14 @@ foreach my $method (qw(followed_by and_then or_else)) {
 {
     my $ef = repeat {
         return Future::Strict->new->done;
-    } while => sub { 0 };
+    } while => sub { 0 }, return => Future::Strict->new;
     isa_ok($ef, 'Future::Strict', 'repeat() "while" should return Future::Strict');
 }
 
 {
     my $ef = repeat {
         return Future::Strict->new->done;
-    } until => sub { 1 };
+    } until => sub { 1 }, return => Future::Strict->new;
     isa_ok($ef, 'Future::Strict', 'repeat() "unless" should return Future::Strict');
 }
 
@@ -53,7 +53,7 @@ foreach my $items ([], [1], [1,2,3]){
     my $size = @$items;
     my $ef = repeat {
         return Future::Strict->new->done;
-    } foreach => $items;
+    } foreach => $items, return => Future::Strict->new;
     isa_ok($ef, 'Future::Strict', "repeat() \"foreach\" with items size = $size should return Future::Strict");
 }
 
