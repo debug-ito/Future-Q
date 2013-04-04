@@ -5,6 +5,7 @@ use FindBin;
 use lib "$FindBin::RealBin";
 use testlib::Utils qw(newf init_warn_handler test_log_num);
 use Test::Builder;
+use Carp;
 
 init_warn_handler();
 
@@ -57,14 +58,25 @@ sub create_return {
 
 sub filter_callbacks {
     my ($case_arg, $on_done, $on_fail) = @_;
-    return $case_arg eq "on_done" ? ($on_done) :
-           $case_arg eq "on_fail" ? (undef, $on_fail) :
-                                    ($on_done, $on_fail);
+    my %switch = (
+        on_done => sub { ($on_done) },
+        on_fail => sub { (undef, $on_fail) },
+        both    => sub { ($on_done, $on_fail) },
+    );
+    return $switch{$case_arg}->();
 }
 
 sub is_immediate {
     my ($case_string) = @_;
-    return ($case_string =~ /^immediate/);
+    my %switch = (
+        immediate_done => sub { 1 },
+        immediate_fail => sub { 1 },
+        immediate_cancel => sub { 1 },
+        pending_done => sub { 0 },
+        pending_fail => sub { 0 },
+        pending_cancel => sub { 0 },
+    );
+    return $switch{$case_string}->();
 }
 
 ### - not ready(pending)とimmediateでは同じ挙動を返さないといけないはずなので、テストを一本化できるはず。
@@ -76,7 +88,9 @@ sub is_immediate {
 ### - repeatはもうサポートしなくていいと思う
 ### - then()はvoid contextでも呼べることもテスト
 ### - あと、コールバック戻り値で際どいケース(空returnとかFutureとその他の値のリストとか)もテスト
+### - もちろん、is_pending, is_fulfilled, is_rejectedといった述語メソッドもテスト
 
+note("------ cases: start with done -> execute a callback");
 
 foreach my $case_invo (qw(pending_done immediate_done)) {
     foreach my $case_arg ("on_done", "both") {
@@ -224,13 +238,135 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
     }
 }
 
+note("------ cases: start with fail -> execute a callback");
 
 foreach my $case_invo (qw(pending_fail immediate_fail)) {
     foreach my $case_arg ("on_fail", "both") {
-        ## TODO
+        foreach my $case_ret ("normal", "immediate_done") {
+            test_then_case $case_invo, $case_arg, $case_ret, 0, sub {
+                my $f = is_immediate($case_invo) ? newf()->reject(1,2,3) : newf;
+                my $done_executed = 0;
+                my $fail_executed = 0;
+                my $nf = $f->then(filter_call_backs $case_ret, sub { $done_executed = 1}, sub {
+                    is_deeply(\@_, [1,2,3], "then args OK");
+                    $fail_executed = 1;
+                    return create_return($case_ret, qw(a b c));
+                });
+                if(not is_immediate($case_invo)) {
+                    ok($nf->is_pending, "nf is pending");
+                    ok($f->is_pending, "f is pending");
+                    ok(!$fail_executed, "fail callback is not executed");
+                    $f->reject(1,2,3);
+                }
+                ok($fail_executed, "fail callback is executed");
+                ok(!$done_executed, "done callback is not executed");
+                ok($f->is_rejected, "f is rejected");
+                ok($nf->is_fulfilled, "nf is fulfilled");
+                is_deeply([$nf->get], [qw(a b c)], "nf result OK");
+            };
+        }
+        foreach my $case_ret ("die", "immediate_fail") {
+            test_then_case $case_invo, $case_arg, $case_ret, 1, sub {
+                my $f = is_immediate($case_invo) ? newf()->reject(1,2,3) : newf;
+                my $done_executed = 0;
+                my $fail_executed = 0;
+                my $nf = $f->then(filter_callbacks $case_arg, sub { $done_executed = 1 }, sub {
+                    is_deeply(\@_, [1,2,3], "then args OK");
+                    $fail_executed = 1;
+                    return create_return($case_ret, qw(a b c));
+                });
+                if(not is_immediate($case_invo)) {
+                    ok($f->is_pending, "f is pending");
+                    ok($nf->is_pending, "nf is pending");
+                    ok(!$fail_executed, "fail callback is not executed");
+                    $f->reject(1,2,3);
+                }
+                ok($fail_executed, "fail callback is executed");
+                ok(!$done_executed, "done callback is not executed");
+                ok($f->is_rejected, "f is rejected");
+                ok($nf->is_rejected, "nf is rejected, too");
+                is_deeply([$nf->failure], $case_ret eq "die" ? ["a"] : [qw(a b c)], "nf failure OK");
+            };
+        }
+        test_then_case $case_invo, $case_arg, "pending_done", 0, sub {
+            my $f = is_immediate($case_invo) ? newf()->reject(1,2,3) : newf;
+            my $done_executed = 0;
+            my $fail_executed = 0;
+            my $cf = newf;
+            my $nf = $f->then(filter_callbacks $case_arg, sub { $done_executed = 1 }, sub {
+                is_deeply(\@_, [1,2,3], "then arg OK");
+                $fail_executed = 1;
+                return $cf;
+            });
+            if(not is_immediate($case_invo)) {
+                ok(!$fail_executed, "fail callback not executed");
+                ok($f->is_pending, "f is pending");
+                ok($nf->is_pending, "nf is pending");
+                $f->reject(1,2,3);
+            }
+            ok($fail_executed, "fail callback executed");
+            ok($done_executed, "done callback executed");
+            ok($f->is_rejected, "f is rejected");
+            ok($nf->is_pending, "nf is still pending");
+            $cf->fulfill(qw(a b c));
+            ok($nf->is_fulfilled, "nf is fulfilled");
+            is_deeply([$nf->get], [qw(a b c)], "nf result OK");
+        };
+        test_then_case $case_invo, $case_arg, "pending_fail", 1, sub {
+            my $f = is_immediate($case_invo) ? newf()->reject(1,2,3) : newf;
+            my $done_executed = 0;
+            my $fail_executed = 0;
+            my $cf = newf;
+            my $nf = $f->then(filter_callbacks $case_arg, sub { $done_executed = 1 }, sub {
+                is_deeply(\@_, [1,2,3], "then args OK");
+                $fail_executed = 1;
+                return $cf;
+            });
+            if(not is_immediate($case_invo)) {
+                ok(!$fail_executed, "fail callback not executed");
+                ok($f->is_pending, "f is pending");
+                ok($nf->is_pending, "nf is pending");
+                $f->reject(1,2,3);
+            }
+            ok($fail_executed, "fail callback executed");
+            ok($f->is_rejected, "f is rejected");
+            ok($nf->is_pending, "nf is still pending");
+            $cf->reject(qw(a b c));
+            ok($nf->is_rejected, "nf is rejected");
+            is_deeply([$nf->failure], [qw(a b c)], "nf failure OK");
+        };
+        test_then_case $case_invo, $case_arg, "immediate_cancel", 0, sub {
+            my $f = is_immediate($case_invo) ? newf()->reject(1,2,3) : newf;
+            my $done_executed = 0;
+            my $fail_executed = 0;
+            my $nf = $f->then(filter_callbacks $case_arg, sub { $done_executed = 1 }, sub {
+                is_deeply(\@_, [1,2,3], "then args OK");
+                $fail_executed = 1;
+                return newf()->cancel();
+            });
+            if(not is_immediate($case_invo)) {
+                ok(!$fail_executed, "fail callback not executed");
+                ok($f->is_pending, "f is pending");
+                ok($nf->is_pending, "nf is pending");
+                $f->reject(1,2,3);
+            }
+            ok($fail_executed, "fail callback executed");
+            ok(!$done_executed, "done callback not executed");
+            ok($f->is_rejected, "f is rejected");
+            ok(!$nf->is_pending, "nf is not pending");
+            ok($nf->is_cancelled, "nf is cancelled");
+        };
+        test_then_case $case_invo, $case_arg, "pending_cancel", 0, sub {
+            fail("TODO");
+        };
     }
 }
 
+note("------ cases: start with done -> no catching callback");
+
+note("------ cases: start with fail -> no catching callback");
+
+note("------ cases: start with cancel -> not execute callback");
 
 
 note("--- check if untested cases exist.");
