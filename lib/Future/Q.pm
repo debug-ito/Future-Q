@@ -25,25 +25,25 @@ sub DESTROY {
     return if in_global_destruction;
     my $id = refaddr $self;
     if($self->is_ready && $self->failure && !$failure_handled_for{$id}) {
-        $self->_warn_failure();
-        my @failed_subfutures = try {
+        $self->_q_warn_failure();
+        my @failed_subfutures = Try::Tiny::try {
             $self->failed_futures;
-        }catch {
+        }Try::Tiny::catch {
             ();
         };
         foreach my $f (@failed_subfutures) {
-            $f->_warn_failure(is_subfuture => 1) if blessed($f) && $f->can('_warn_failure');
+            $f->_q_warn_failure(is_subfuture => 1) if blessed($f) && $f->can('_q_warn_failure');
         }
     }
     delete $failure_handled_for{$id};
 }
 
-sub _set_failure_handled {
+sub _q_set_failure_handled {
     my ($self) = @_;
     $failure_handled_for{refaddr $self} = 1;
 }
 
-sub _warn_failure {
+sub _q_warn_failure {
     my ($self, %options) = @_;
     if($self->is_ready && $self->failure) {
         my $failure = $self->failure;
@@ -55,16 +55,82 @@ sub _warn_failure {
     }
 }
 
-sub on_fail {
-    my ($self) = @_;
-    $self->_set_failure_handled();
-    goto $self->can('SUPER::on_fail');
+sub try {
+    my ($class, $func, @args) = @_;
+    if(!defined($func) || ref($func) ne "CODE") {
+        croak("func parameter must be a code-ref");
+    }
+    my $result_future = Try::Tiny::try {
+        my @results = $func->(@args);
+        if(scalar(@results) == 1 && blessed($results[0]) && $results[0]->isa('Future')) {
+            return $results[0];
+        }else {
+            return $class->new->fulfill(@results);
+        }
+    } Try::Tiny::catch {
+        my $e = shift;
+        return $class->new->reject($e);
+    };
+    return $result_future;
 }
 
-sub on_ready {
+*fcall = *try;
+
+sub then {
+    my ($self, $on_fulfilled, $on_rejected) = @_;
+    if(!defined($on_fulfilled) && !defined($on_rejected)) {
+        croak("You must specify either on_fulfilled or on_rejected parameter");
+    }
+    if(defined($on_fulfilled) && ref($on_fulfilled) ne "CODE") {
+        croak("on_fulfilled parameter must be a code-ref");
+    }
+    if(defined($on_rejected) && ref($on_rejected) ne "CODE") {
+        croak("on_rejected parameter must be a code-ref");
+    }
+    my $class = ref($self);
+    $self->_q_set_failure_handled();
+    my $next_future = $self->followed_by(sub {
+        my $f = shift;
+        return $f if $f->is_cancelled;
+        my $return_future = $f;
+        if($f->is_fulfilled && defined($on_fulfilled)) {
+            $return_future = $class->try($on_fulfilled, $f->get);
+        }elsif($f->is_rejected && defined($on_rejected)) {
+            $return_future = $class->try($on_rejected, $f->failure);
+        }
+        $return_future->_q_set_failure_handled();
+        return $return_future;
+    });
+    return $next_future;
+}
+
+sub catch {
+    my ($self, $on_rejected) = @_;
+    @_ = ($self, undef, $on_rejected);
+    goto $self->can('then');
+}
+
+sub fulfill {
+    goto $_[0]->can('done');
+}
+
+sub reject {
+    goto $_[0]->can('fail');
+}
+
+sub is_pending {
     my ($self) = @_;
-    $self->_set_failure_handled();
-    goto $self->can('SUPER::on_ready');
+    return !$self->is_ready;
+}
+
+sub is_fulfilled {
+    my ($self) = @_;
+    return (!$self->is_pending && !$self->is_cancelled && !$self->is_rejected);
+}
+
+sub is_rejected {
+    my ($self) = @_;
+    return ($self->is_ready && $self->failure);
 }
 
 foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
@@ -73,8 +139,8 @@ foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
     *{$method} = sub {
         my ($self, @subfutures) = @_;
         foreach my $sub (@subfutures) {
-            next if !blessed($sub) || !$sub->can('_set_failure_handled');
-            $sub->_set_failure_handled();
+            next if !blessed($sub) || !$sub->can('_q_set_failure_handled');
+            $sub->_q_set_failure_handled();
         }
         goto $self->can($supermethod);
     };

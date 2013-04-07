@@ -70,7 +70,7 @@ my $spy = testlib::Spy->new;
     $spy->clear;
     my $f = Future::Q->new;
     $f->reject(1,2,3);
-    my @his = $spy->hisotry_of("fail");
+    my @his = $spy->history_of("fail");
     is_deeply(\@his, [[$f, 1,2,3]], "reject is alias for fail");
     $f->catch(sub { }); ## failure handled
 }

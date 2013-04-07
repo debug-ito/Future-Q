@@ -43,7 +43,7 @@ sub create_return {
     my ($case_ret, @values) = @_;
     my %switch = (
         normal => sub { @values },
-        die => sub { die $values[0] },
+        die => sub { die ($values[0] . "\n") },
         pending_done => sub { newf },
         pending_fail => sub { newf },
         pending_cancel => sub { newf },
@@ -104,7 +104,7 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
         }
         foreach my $case_ret (qw(die immediate_fail)) {
             test_then_case $case_invo, $case_arg, $case_ret, 1, sub {
-                my $f = is_immeidate($case_invo) ? newf()->fulfill(1,2,3) : newf;
+                my $f = is_immediate($case_invo) ? newf()->fulfill(1,2,3) : newf;
                 my $fail_executed = 0;
                 my $done_executed = 0;
                 my $nf = $f->then(filter_callbacks $case_arg, sub {
@@ -122,7 +122,7 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 ok(!$fail_executed, "fail not executed");
                 ok($f->is_fulfilled, "f is fulfilled");
                 ok($nf->is_rejected, "nf is rejected");
-                is_deeply([$nf->failure], $case_ret eq "die" ? ["a"] : [qw(a b c)], "nf failure OK");
+                is_deeply([$nf->failure], $case_ret eq "die" ? ["a\n"] : [qw(a b c)], "nf failure OK");
             };
         }
         test_then_case $case_invo, $case_arg, "pending_done", 0, sub {
@@ -230,7 +230,7 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 my $f = is_immediate($case_invo) ? newf()->reject(1,2,3) : newf;
                 my $done_executed = 0;
                 my $fail_executed = 0;
-                my $nf = $f->then(filter_call_backs $case_ret, sub { $done_executed = 1}, sub {
+                my $nf = $f->then(filter_callbacks $case_arg, sub { $done_executed = 1}, sub {
                     is_deeply(\@_, [1,2,3], "then args OK");
                     $fail_executed = 1;
                     return create_return($case_ret, qw(a b c));
@@ -268,7 +268,7 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 ok(!$done_executed, "done callback is not executed");
                 ok($f->is_rejected, "f is rejected");
                 ok($nf->is_rejected, "nf is rejected, too");
-                is_deeply([$nf->failure], $case_ret eq "die" ? ["a"] : [qw(a b c)], "nf failure OK");
+                is_deeply([$nf->failure], $case_ret eq "die" ? ["a\n"] : [qw(a b c)], "nf failure OK");
             };
         }
         test_then_case $case_invo, $case_arg, "pending_done", 0, sub {
@@ -288,7 +288,7 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 $f->reject(1,2,3);
             }
             ok($fail_executed, "fail callback executed");
-            ok($done_executed, "done callback executed");
+            ok(!$done_executed, "done callback not executed");
             ok($f->is_rejected, "f is rejected");
             ok($nf->is_pending, "nf is still pending");
             $cf->fulfill(qw(a b c));

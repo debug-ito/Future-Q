@@ -60,7 +60,7 @@ note("------ tests for try() method");
     });
     isa_ok($f, "Future::Q");
     ok($f->is_rejected, "f is rejected");
-    is_deeply([$f->failure], "failure\n", "f failure OK");
+    is_deeply([$f->failure], ["failure\n"], "f failure OK");
     $f->catch(sub {}); ## handled
 }
 

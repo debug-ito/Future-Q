@@ -25,7 +25,10 @@ sub test_log_num {
     my ($testee_code, $exp_log_num, $msg) = @_;
     local $Test::Builder::Level = $Test::Builder::Level + 1;
     @logs = ();
-    $testee_code->();
+    {
+        local $Test::Builder::Level = $Test::Builder::Level + 1;
+        $testee_code->();
+    }
     is(int(@logs), $exp_log_num, $msg) or diag(explain @logs);
 }
 
