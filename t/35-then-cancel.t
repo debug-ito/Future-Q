@@ -41,10 +41,10 @@ foreach my $case (
         return $rf;
     });
     is($callbacked, 1, "callback executed once");
-    is($nf->is_pending, "nf is pending");
-    is($rf->is_pending, "rf is pending");
+    ok($nf->is_pending, "nf is pending");
+    ok($rf->is_pending, "rf is pending");
     $nf->cancel();
-    is($rf->is_cancelled, "If returned future (rf) is pending, rf is cancelled when nf is cancelled.");
+    ok($rf->is_cancelled, "If returned future (rf) is pending, rf is cancelled when nf is cancelled.");
 }
 
 
