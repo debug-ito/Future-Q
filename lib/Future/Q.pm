@@ -6,7 +6,7 @@ use base "Future";
 use Devel::GlobalDestruction;
 use Scalar::Util qw(refaddr blessed);
 use Carp;
-use Try::Tiny;
+use Try::Tiny ();
 
 ## ** lexical attributes to avoid collision of names.
 
@@ -255,6 +255,87 @@ It is even possible that some subfutures fail but the dependent future succeeds.
 
 L<Future::Q> inherits all the class and object methods from L<Future>.
 There is no extra public method.
+
+
+
+TODO: Clean up documentation
+
+=head2 $future = Future::Q->new()
+
+=head2 $future = Future::Q->try($func, @args)
+
+=head2 $future = Future::Q->fcall($func, @args)
+
+=head2 $next_future = $future->then($on_fulfilled, [$on_rejected])
+
+=head2 $next_future = $future->catch($on_rejected)
+
+Alias of $future->then(undef, $on_rejected).
+
+=head2 $future = $future->fulfill(@result)
+
+Alias of done().
+
+=head2 $future = $future->reject($exception, @details)
+
+Alias of fail(), not die().
+
+=head2 $is_pending = $future->is_pending()
+
+=head2 $is_fulfilled = $future->is_fulfilled()
+
+=head2 $is_rejected = $future->is_rejected()
+
+=head1 MISSING METHODS
+
+=over
+
+=item promise.fail()
+
+Unfortunately L<Future> already has C<fail()> method for a completely different meaning.
+Use C<catch()> method instead.
+
+=item promise.progress(), deferred.notify(), promise.finally(), promise.fin()
+
+Progress handlers and "finally" callbacks are interesting features,
+but they are not supported in this version of L<Future::Q>.
+
+=item promise.done()
+
+Unfortunately L<Future> already has C<done()> method for a completely different meaning.
+There is no corresponding method in this version of L<Future::Q>.
+
+=item promise.fcall() (object method)
+
+Its class method form is enough to get the job done.
+Use C<< Future::Q->fcall() >>.
+
+=item promise.all(), promise.allResolve()
+
+Use C<< Future::Q->needs_all() >> and C<< Future::Q->wait_all() >> methods, respectively.
+
+=item deferred.resolve()
+
+This is an interesting method, but it's not supported in this version of L<Future::Q>.
+Call C<fulfill()> or C<reject()> explicitly instead.
+
+=back
+
+=head1 MEMO
+
+TODO: erase the memo
+
+  - コールバック戻り値がfailするケースは警告出すことも検証
+  - つか、strict featureについてはthen()さえ検証できれば20-singleと30-chainedは要らない気がしてきた。
+    それはFuture::Qの推奨する使い方じゃない。then()とcatch()な。
+  - Future::Qの推奨する使い方は、then()とon_cancel()のみ。20-singleに関してはthen()を呼ばないケースのみ検証すればいい。
+  - repeatはもうサポートしなくていいと思う
+  - then()はvoid contextでも呼べることもテスト
+  - あと、コールバック戻り値で際どいケース(空returnとかFutureとその他の値のリストとか)もテスト
+  - もちろん、is_pending, is_fulfilled, is_rejectedといった述語メソッドもテスト
+  - deferredとpromiseの区別がないことを明記
+
+
 
 =head1 SEE ALSO
 
