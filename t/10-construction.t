@@ -35,20 +35,6 @@ foreach my $method (qw(followed_by and_then or_else)) {
     $f->done;
 }
 
-{
-    my $ef = repeat {
-        return Future::Q->new->done;
-    } while => sub { 0 }, return => Future::Q->new;
-    isa_ok($ef, 'Future::Q', 'repeat() "while" should return Future::Q');
-}
-
-{
-    my $ef = repeat {
-        return Future::Q->new->done;
-    } until => sub { 1 }, return => Future::Q->new;
-    isa_ok($ef, 'Future::Q', 'repeat() "unless" should return Future::Q');
-}
-
 foreach my $items ([], [1], [1,2,3]){
     my $size = @$items;
     my $ef = repeat {
