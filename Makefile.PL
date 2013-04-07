@@ -24,6 +24,7 @@ WriteMakefile(
         'FindBin' => 0,
         'Carp' => 0,
         'Test::MockModule' => "0.05",
+        'Test::Identity' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Future-Q-*' },
