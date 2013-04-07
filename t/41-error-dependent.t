@@ -76,7 +76,7 @@ my @cases = (
         $_->done foreach @sub;
         ok(!$wf->failure, "dependent future is success");
     }},
-    {label => "needs_all, some done, single failure, not handled", warn_num => 2, code => sub {
+    {label => "needs_all, some done, single failure, not handled", warn_num => 1, code => sub {
         my @sub = map { newf } 1..5;
         my $wf = Future::Q->needs_all(@sub);
         $wf->then(sub {
@@ -107,13 +107,8 @@ my @cases = (
     {label => "needs_all, immediate multiple failed futures, not handled", warn_num => 4, code => sub {
         note("One warning for the dependent future, three for the subfutures");
         my @sub = map { $_ <= 3 ? newf->fail("failure $_") : newf->done($_) } 1..5;
-        try {
-            my $wf = Future::Q->needs_all(@sub);
-            is(scalar($wf->failure), "failure 1", "dependent future is failure. Message OK");
-        }catch {
-            my $e = shift;
-            fail("There is a bug in the original Future: Exception: $e");
-        };
+        my $wf = Future::Q->needs_all(@sub);
+        is(scalar($wf->failure), "failure 1", "dependent future is failure. Message OK");
     }},
     {label => "needs_all, immediate multiple failed futures, handled", warn_num => 0, code => sub {
         my @sub = map { $_ <= 3 ? newf->fail("failure $_") : newf->done($_) } 1..5;
@@ -140,10 +135,10 @@ my @cases = (
         $sub[1]->fail("failure 1");
         ok(!$wf->is_ready, "depedent future is still not ready");
         $sub[2]->done();
-        ok(!$wf->failure, "dependet future is now success");
+        ok(!$wf->failure, "dependent future is now success");
         is(int($wf->failed_futures), 2, "... though there are two failed subfutures.");
     }},
-    {label => "needs_any, all failed, not handled", warn_num => 6, code => sub {
+    {label => "needs_any, all failed, not handled, then() propagates only the failure of dependent future", warn_num => 1, code => sub {
         my @sub = map { newf } 1..5;
         my $wf = Future::Q->needs_any(@sub);
         $wf->then(sub {
