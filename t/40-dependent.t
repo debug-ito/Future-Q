@@ -62,7 +62,7 @@ my @cases = (
         my @sub = map { newf->fail("failure $_") } 1..5;
         my $wf = Future::Q->wait_any(@sub);
         my $handled = 0;
-        $wf->on_fail(sub {
+        $wf->catch(sub {
             my $e = shift;
             $handled = 1;
             like($e, qr/^failure/, "failure message OK");
@@ -78,7 +78,8 @@ my @cases = (
     }},
     {label => "needs_all, some done, single failure, not handled", warn_num => 2, code => sub {
         my @sub = map { newf } 1..5;
-        my $wf = Future::Q->needs_all(@sub)->on_done(sub {
+        my $wf = Future::Q->needs_all(@sub);
+        $wf->then(sub {
             fail('This should not be executed.');
         });
         $_->done foreach @sub[0..3];
@@ -89,9 +90,10 @@ my @cases = (
     {label => "needs_all, some done, single failure, handled", warn_num => 0, code => sub {
         my @sub = map { newf } 1..5;
         my $handled = 0;
-        my $wf; $wf = Future::Q->needs_all(@sub)->on_done(sub {
+        my $wf = Future::Q->needs_all(@sub);
+        $wf->then(sub {
             fail("This should not be executed.");
-        })->on_fail(sub {
+        }, sub {
             my $e = shift;
             $handled = 1;
             is($e, "failure 4", "failure message OK");
@@ -115,24 +117,19 @@ my @cases = (
     }},
     {label => "needs_all, immediate multiple failed futures, handled", warn_num => 0, code => sub {
         my @sub = map { $_ <= 3 ? newf->fail("failure $_") : newf->done($_) } 1..5;
-        try {
-            my $wf = Future::Q->needs_all(@sub);
-            my $handled = 0;
-            $wf->on_ready(sub {
-                my $f = shift;
-                $handled = 1;
-                is(scalar($f->failure), "failure 1", "dependent future is failure. message OK");
-                is(int($f->pending_futures), 0, "no pending subfutures");
-                is(int($f->ready_futures), 5, "five ready subfutures");
-                is(int($f->failed_futures), 3, "three failed subfutures");
-                is(int($f->done_futures), 2, "two done subfutures");
-                is(int($f->cancelled_futures), 0, "no cancelled subfutures");
-            });
-            ok($handled, "handled");
-        }catch {
+        my $wf = Future::Q->needs_all(@sub);
+        my $handled = 0;
+        $wf->catch(sub {
             my $e = shift;
-            fail("There is a bug in the original Future: Exception: $e");
-        };
+            $handled = 1;
+            is($e, "failure 1", "dependent future is failure. message OK");
+            is(int($wf->pending_futures), 0, "no pending subfutures");
+            is(int($wf->ready_futures), 5, "five ready subfutures");
+            is(int($wf->failed_futures), 3, "three failed subfutures");
+            is(int($wf->done_futures), 2, "two done subfutures");
+            is(int($wf->cancelled_futures), 0, "no cancelled subfutures");
+        });
+        ok($handled, "handled");
     }},
     {label => "needs_any, some failed, single succeeded", warn_num => 0, code => sub {
         note("In this case, the failed subfutures are ignored because the dependent future succeeds.");
@@ -148,7 +145,8 @@ my @cases = (
     }},
     {label => "needs_any, all failed, not handled", warn_num => 6, code => sub {
         my @sub = map { newf } 1..5;
-        my $wf = Future::Q->needs_any(@sub)->on_done(sub {
+        my $wf = Future::Q->needs_any(@sub);
+        $wf->then(sub {
             fail("this should not be executed");
         });
         $sub[$_]->fail("failure $_") foreach 0 .. $#sub;
@@ -157,9 +155,10 @@ my @cases = (
     {label => "needs_any, all failed, handled", warn_num => 0, code => sub {
         my @sub = map { newf } 1..5;
         my $handled = 0;
-        my $wf; $wf = Future::Q->needs_any(@sub)->on_done(sub {
+        my $wf = Future::Q->needs_any(@sub);
+        $wf->then(sub {
             fail("this should not be executed");
-        })->on_fail(sub {
+        }, sub {
             my $e = shift;
             $handled = 1;
             is($e, "failure 4", "failure message OK");
