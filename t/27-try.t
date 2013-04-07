@@ -10,6 +10,30 @@ use testlib::Utils qw(newf);
 note("------ tests for try() method");
 
 {
+    note("--- try() should executed the code immediately with the given args");
+    my $callbacked = 0;
+    Future::Q->try(sub {
+        $callbacked = 1;
+        is_deeply(\@_, [], "no args OK");
+    });
+    ok($callbacked, "callbacked");
+
+    $callbacked = 0;
+    Future::Q->try(sub {
+        $callbacked = 1;
+        is_deeply(\@_, [10], "single arg OK");
+    }, 10);
+    ok($callbacked, "callbacked");
+
+    $callbacked = 0;
+    Future::Q->try(sub {
+        $callbacked = 1;
+        is_deeply(\@_, [qw(a b c)], "multiple args OK");
+    }, qw(a b c));
+    ok($callbacked, "callbacked");
+}
+
+{
     note("--- case: normal return (scalar)");
     my $f = Future::Q->try(sub {
         return 10;
