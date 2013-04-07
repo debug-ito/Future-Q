@@ -89,18 +89,50 @@ sub then {
     }
     my $class = ref($self);
     $self->_q_set_failure_handled();
-    my $next_future = $self->followed_by(sub {
-        my $f = shift;
-        return $f if $f->is_cancelled;
-        my $return_future = $f;
-        if($f->is_fulfilled && defined($on_fulfilled)) {
-            $return_future = $class->try($on_fulfilled, $f->get);
-        }elsif($f->is_rejected && defined($on_rejected)) {
-            $return_future = $class->try($on_rejected, $f->failure);
+    
+    my $next_future = $self->new;
+    my $return_future;
+    $self->on_ready(sub {
+        my $invo_future = shift;
+        if($invo_future->is_cancelled) {
+            $next_future->cancel() if $next_future->is_pending;
+            return;
+        }
+
+        ## determine return_future
+        $return_future = $invo_future;
+        if($invo_future->is_rejected && defined($on_rejected)) {
+            $return_future = $class->try($on_rejected, $invo_future->failure);
+        }elsif($invo_future->is_fulfilled && defined($on_fulfilled)) {
+            $return_future = $class->try($on_fulfilled, $invo_future->get);
         }
         $return_future->_q_set_failure_handled();
-        return $return_future;
+
+        ## transfer the results of return_future to next_future
+        $return_future->on_ready(sub {
+            my $rf = shift;
+            if($rf->is_cancelled) {
+                $next_future->cancel() if $next_future->is_pending;
+                return;
+            }
+            return if !$next_future->is_pending;
+            if($rf->is_rejected) {
+                $next_future->reject($rf->failure);
+            }else {
+                $next_future->fulfill($rf->get);
+            }
+        });
     });
+    if($next_future->is_pending) {
+        $next_future->on_cancel(sub {
+            if(defined($return_future) && $return_future->is_pending) {
+                $return_future->cancel();
+            }
+            if($self->is_pending) {
+                $self->cancel();
+            }
+        });
+    }
     return $next_future;
 }
 

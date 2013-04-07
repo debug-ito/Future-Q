@@ -16,7 +16,7 @@ my @cases = (
     {label => "not-complete", warn_num => 0, code => sub { newf; }},
     {label => "done", warn_num => 0, code => sub { newf()->done; }},
     {label => "canceled", warn_num => 0, code => sub { newf()->cancel; }},
-    {label => "fulfilled", warn_num => 0, code => sub { newf()->fulfilled; }},
+    {label => "fulfilled", warn_num => 0, code => sub { newf()->fulfill; }},
 
     ####### ** NG cases
     {label => "failed", warn_num => 1, code => sub { newf()->fail("failure") }},
