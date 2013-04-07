@@ -325,14 +325,11 @@ Call C<fulfill()> or C<reject()> explicitly instead.
 
 TODO: erase the memo
 
-  - コールバック戻り値がfailするケースは警告出すことも検証
   - つか、strict featureについてはthen()さえ検証できれば20-singleと30-chainedは要らない気がしてきた。
     それはFuture::Qの推奨する使い方じゃない。then()とcatch()な。
   - Future::Qの推奨する使い方は、then()とon_cancel()のみ。20-singleに関してはthen()を呼ばないケースのみ検証すればいい。
-  - repeatはもうサポートしなくていいと思う
-  - then()はvoid contextでも呼べることもテスト
   - あと、コールバック戻り値で際どいケース(空returnとかFutureとその他の値のリストとか)もテスト
-  - もちろん、is_pending, is_fulfilled, is_rejectedといった述語メソッドもテスト
+    これはtry()メソッドでやればいいか。
   - deferredとpromiseの区別がないことを明記
 
 

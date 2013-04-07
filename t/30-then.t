@@ -77,6 +77,12 @@ sub is_immediate {
     return $switch{$case_string}->();
 }
 
+test_log_num sub {
+    my $f = newf;
+    $f->then(sub {});
+}, 0, "then() generates no warning in void context";
+
+
 note("------ cases: start with done -> execute a callback");
 
 foreach my $case_invo (qw(pending_done immediate_done)) {
