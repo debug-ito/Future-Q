@@ -6,7 +6,7 @@ use Future::Q;
 use Test::Builder;
 use Test::More;
 
-our @EXPORT_OK = qw(newf init_warn_handler test_log_num);
+our @EXPORT_OK = qw(newf init_warn_handler test_log_num filter_callbacks);
 
 my @logs = ();
 
@@ -28,5 +28,16 @@ sub test_log_num {
     $testee_code->();
     is(int(@logs), $exp_log_num, $msg) or diag(explain @logs);
 }
+
+sub filter_callbacks {
+    my ($case_arg, $on_done, $on_fail) = @_;
+    my %switch = (
+        on_done => sub { ($on_done) },
+        on_fail => sub { (undef, $on_fail) },
+        both    => sub { ($on_done, $on_fail) },
+    );
+    return $switch{$case_arg}->();
+}
+
 
 1;

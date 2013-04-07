@@ -3,7 +3,7 @@ use warnings;
 use Test::More;
 use FindBin;
 use lib "$FindBin::RealBin";
-use testlib::Utils qw(newf init_warn_handler test_log_num);
+use testlib::Utils qw(newf init_warn_handler test_log_num filter_callbacks);
 use Test::Builder;
 use Carp;
 
@@ -52,16 +52,6 @@ sub create_return {
         immediate_cancel => sub { newf()->cancel() },
     );
     return $switch{$case_ret}->();
-}
-
-sub filter_callbacks {
-    my ($case_arg, $on_done, $on_fail) = @_;
-    my %switch = (
-        on_done => sub { ($on_done) },
-        on_fail => sub { (undef, $on_fail) },
-        both    => sub { ($on_done, $on_fail) },
-    );
-    return $switch{$case_arg}->();
 }
 
 sub is_immediate {
