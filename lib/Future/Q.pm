@@ -4,7 +4,7 @@ use warnings;
 use Future 0.12;
 use base "Future";
 use Devel::GlobalDestruction;
-use Scalar::Util qw(refaddr blessed);
+use Scalar::Util qw(refaddr blessed weaken);
 use Carp;
 use Try::Tiny ();
 
@@ -124,12 +124,14 @@ sub then {
         });
     });
     if($next_future->is_pending) {
+        weaken(my $invo_future = $self);
+        weaken(my $return_future = $return_future);
         $next_future->on_cancel(sub {
+            if(defined($invo_future) && $invo_future->is_pending) {
+                $invo_future->cancel();
+            }
             if(defined($return_future) && $return_future->is_pending) {
                 $return_future->cancel();
-            }
-            if($self->is_pending) {
-                $self->cancel();
             }
         });
     }

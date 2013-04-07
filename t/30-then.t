@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Memory::Cycle;
 use FindBin;
 use lib "$FindBin::RealBin";
 use testlib::Utils qw(newf init_warn_handler test_log_num filter_callbacks);
@@ -89,6 +90,8 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 }, sub {
                     $fail_executed = 1;
                 });
+                memory_cycle_ok($f, "f is free of cyclic ref");
+                memory_cycle_ok($nf, "nf is free of cyclic ref");
                 if(not is_immediate($case_invo)) {
                     ok(!$done_executed, "done callback not executed");
                     ok($f->is_pending, "f is pending");
@@ -100,6 +103,8 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 is_deeply([$nf->get()], [qw(a b c)], "nf result OK");
                 ok($done_executed, "callback executed");
                 ok(!$fail_executed, "on_fail callback not executed");
+                memory_cycle_ok($f, "f is still free of cyclic ref");
+                memory_cycle_ok($nf, "nf is still free of cyclic ref");
             };  
         }
         foreach my $case_ret (qw(die immediate_fail)) {
@@ -112,6 +117,8 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                     $done_executed = 1;
                     return create_return($case_ret, qw(a b c));
                 }, sub { $fail_executed = 1 });
+                memory_cycle_ok($f, "f is free of cyclic ref");
+                memory_cycle_ok($nf, "nf is free of cyclic ref");
                 if(not is_immediate($case_invo)) {
                     ok(!$done_executed, "done callback not executed");
                     ok($f->is_pending, "f is pending");
@@ -123,6 +130,8 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 ok($f->is_fulfilled, "f is fulfilled");
                 ok($nf->is_rejected, "nf is rejected");
                 is_deeply([$nf->failure], $case_ret eq "die" ? ["a\n"] : [qw(a b c)], "nf failure OK");
+                memory_cycle_ok($f, "f is still free of cyclic ref");
+                memory_cycle_ok($nf, "nf is still free of cyclic ref");
             };
         }
         test_then_case $case_invo, $case_arg, "pending_done", 0, sub {
@@ -135,12 +144,15 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 $done_executed = 1;
                 return $cf;
             }, sub { $fail_executed = 1 });
+            memory_cycle_ok($f, "f is free of cyclic ref");
+            memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
                 ok(!$done_executed, "done callback not executed");
                 ok($f->is_pending, "f is pending");
                 ok($nf->is_pending, "nf is pending");
                 $f->fulfill(1, 2, 3);
             }
+            memory_cycle_ok($cf, "cf is free of cyclic ref");
             ok($f->is_fulfilled, "f is fulfilled");
             ok($cf->is_pending, "cf is pending");
             ok($nf->is_pending, "nf is still pending");
@@ -150,6 +162,9 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
             ok($cf->is_fulfilled, "cf is fulfilled");
             ok($nf->is_fulfilled, "nf is fulfilled");
             is_deeply([$nf->get], [qw(a b c)], "nf result OK");
+            memory_cycle_ok($f, "f still is free of cyclic ref");
+            memory_cycle_ok($nf, "nf is still free of cyclic ref");
+            memory_cycle_ok($cf, "cf is still free of cyclic ref");
         };
         test_then_case $case_invo, $case_arg, "pending_fail", 1, sub {
             my $f = is_immediate($case_invo) ? newf()->fulfill(1,2,3) : newf;
@@ -161,12 +176,15 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 $done_executed = 1;
                 return $cf;
             }, sub { $fail_executed = 1 });
+            memory_cycle_ok($f, "f is free of cyclic ref");
+            memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
                 ok(!$done_executed, "done callback not yet executed");
                 ok($f->is_pending, "f is pending");
                 ok($nf->is_pending, "nf is pending");
                 $f->fulfill(1, 2, 3);    
             }
+            memory_cycle_ok($cf, "cf is free of cyclic ref");
             ok($done_executed, "done callback executed");
             ok(!$fail_executed, "fail callback not executed");
             ok($f->is_fulfilled, "f is fulfilled");
@@ -174,6 +192,9 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
             $cf->reject(qw(a b c));
             ok($nf->is_rejected, "nf is rejected");
             is_deeply([$nf->failure], [qw(a b c)], "nf failure OK");
+            memory_cycle_ok($f, "f is still free of cyclic ref");
+            memory_cycle_ok($nf, "nf is still free of cyclic ref");
+            memory_cycle_ok($cf, "cf is still free of cyclic ref");
         };
         test_then_case $case_invo, $case_arg, "immediate_cancel", 0, sub {
             my $f = is_immediate($case_invo) ? newf()->fulfill(1,2,3) : newf;
@@ -184,6 +205,8 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 $done_executed = 1;
                 return newf()->cancel();
             }, sub { $fail_executed = 1 });
+            memory_cycle_ok($f, "f is free of cyclic ref");
+            memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
                 ok(!$done_executed, "done callback not executed");
                 ok($nf->is_pending, "nf is pending");
@@ -194,6 +217,8 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
             ok(!$fail_executed, "fail callback not executed");
             ok(!$nf->is_pending, "nf is not pending");
             ok($nf->is_cancelled, "nf is cancelled");
+            memory_cycle_ok($f, "f is still free of cyclic ref");
+            memory_cycle_ok($nf, "nf is still free of cyclic ref");
         };
         test_then_case $case_invo, $case_arg, "pending_cancel", 0, sub {
             my $f = is_immediate($case_invo) ? newf()->fulfill(1,2,3) : newf;
@@ -205,11 +230,14 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 $done_executed = 1;
                 return $cf;
             }, sub { $fail_executed = 1 });
+            memory_cycle_ok($f, "f is free of cyclic ref");
+            memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
                 ok(!$done_executed, "done callback not called yet");
                 ok($nf->is_pending, "nf is pending");
                 $f->fulfill(1,2,3);
             }
+            memory_cycle_ok($cf, "cf is free of cyclic ref");
             ok($f->is_fulfilled, "f is fulfilled");
             ok($done_executed, "done callback is called");
             ok(!$fail_executed, "fail callback is not called");
@@ -217,6 +245,9 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
             $cf->cancel();
             ok(!$nf->is_pending, "nf is not pending");
             ok($nf->is_cancelled, "nf is cancelled");
+            memory_cycle_ok($f, "f is still free of cyclic ref");
+            memory_cycle_ok($nf, "nf is still free of cyclic ref");
+            memory_cycle_ok($cf, "cf is still free of cyclic ref");
         };
     }
 }
@@ -235,6 +266,8 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                     $fail_executed = 1;
                     return create_return($case_ret, qw(a b c));
                 });
+                memory_cycle_ok($f, "f is free of cyclic ref");
+                memory_cycle_ok($nf, "nf is free of cyclic ref");
                 if(not is_immediate($case_invo)) {
                     ok($nf->is_pending, "nf is pending");
                     ok($f->is_pending, "f is pending");
@@ -246,6 +279,8 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 ok($f->is_rejected, "f is rejected");
                 ok($nf->is_fulfilled, "nf is fulfilled");
                 is_deeply([$nf->get], [qw(a b c)], "nf result OK");
+                memory_cycle_ok($f, "f is still free of cyclic ref");
+                memory_cycle_ok($nf, "nf is still free of cyclic ref");
             };
         }
         foreach my $case_ret ("die", "immediate_fail") {
@@ -258,6 +293,8 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                     $fail_executed = 1;
                     return create_return($case_ret, qw(a b c));
                 });
+                memory_cycle_ok($f, "f is free of cyclic ref");
+                memory_cycle_ok($nf, "nf is free of cyclic ref");
                 if(not is_immediate($case_invo)) {
                     ok($f->is_pending, "f is pending");
                     ok($nf->is_pending, "nf is pending");
@@ -269,6 +306,8 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 ok($f->is_rejected, "f is rejected");
                 ok($nf->is_rejected, "nf is rejected, too");
                 is_deeply([$nf->failure], $case_ret eq "die" ? ["a\n"] : [qw(a b c)], "nf failure OK");
+                memory_cycle_ok($f, "f is still free of cyclic ref");
+                memory_cycle_ok($nf, "nf is still free of cyclic ref");
             };
         }
         test_then_case $case_invo, $case_arg, "pending_done", 0, sub {
@@ -281,12 +320,15 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 $fail_executed = 1;
                 return $cf;
             });
+            memory_cycle_ok($f, "f is free of cyclic ref");
+            memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
                 ok(!$fail_executed, "fail callback not executed");
                 ok($f->is_pending, "f is pending");
                 ok($nf->is_pending, "nf is pending");
                 $f->reject(1,2,3);
             }
+            memory_cycle_ok($cf, "cf is free of cyclic ref");
             ok($fail_executed, "fail callback executed");
             ok(!$done_executed, "done callback not executed");
             ok($f->is_rejected, "f is rejected");
@@ -294,6 +336,9 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
             $cf->fulfill(qw(a b c));
             ok($nf->is_fulfilled, "nf is fulfilled");
             is_deeply([$nf->get], [qw(a b c)], "nf result OK");
+            memory_cycle_ok($f, "f is still free of cyclic ref");
+            memory_cycle_ok($nf, "nf is still free of cyclic ref");
+            memory_cycle_ok($cf, "cf is still free of cyclic ref");
         };
         test_then_case $case_invo, $case_arg, "pending_fail", 1, sub {
             my $f = is_immediate($case_invo) ? newf()->reject(1,2,3) : newf;
@@ -305,18 +350,24 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 $fail_executed = 1;
                 return $cf;
             });
+            memory_cycle_ok($f, "f is free of cyclic ref");
+            memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
                 ok(!$fail_executed, "fail callback not executed");
                 ok($f->is_pending, "f is pending");
                 ok($nf->is_pending, "nf is pending");
                 $f->reject(1,2,3);
             }
+            memory_cycle_ok($cf, "cf is free of cyclic ref");
             ok($fail_executed, "fail callback executed");
             ok($f->is_rejected, "f is rejected");
             ok($nf->is_pending, "nf is still pending");
             $cf->reject(qw(a b c));
             ok($nf->is_rejected, "nf is rejected");
             is_deeply([$nf->failure], [qw(a b c)], "nf failure OK");
+            memory_cycle_ok($f, "f is still free of cyclic ref");
+            memory_cycle_ok($nf, "nf is still free of cyclic ref");
+            memory_cycle_ok($cf, "cf is still free of cyclic ref");
         };
         test_then_case $case_invo, $case_arg, "immediate_cancel", 0, sub {
             my $f = is_immediate($case_invo) ? newf()->reject(1,2,3) : newf;
@@ -327,6 +378,8 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 $fail_executed = 1;
                 return newf()->cancel();
             });
+            memory_cycle_ok($f, "f is free of cyclic ref");
+            memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
                 ok(!$fail_executed, "fail callback not executed");
                 ok($f->is_pending, "f is pending");
@@ -338,6 +391,8 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
             ok($f->is_rejected, "f is rejected");
             ok(!$nf->is_pending, "nf is not pending");
             ok($nf->is_cancelled, "nf is cancelled");
+            memory_cycle_ok($f, "f is still free of cyclic ref");
+            memory_cycle_ok($nf, "nf is still free of cyclic ref");
         };
         test_then_case $case_invo, $case_arg, "pending_cancel", 0, sub {
             my $f = is_immediate($case_invo) ? newf()->reject(1,2,3) : newf;
@@ -349,12 +404,15 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 $fail_executed = 1;
                 return $cf;
             });
+            memory_cycle_ok($f, "f is free of cyclic ref");
+            memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
                 ok(!$fail_executed, "fail callback not executed");
                 ok($f->is_pending, "f is pending");
                 ok($nf->is_pending, "nf is pending");
                 $f->reject(1,2,3);
             }
+            memory_cycle_ok($cf, "cf is free of cyclic ref");
             ok($fail_executed, "fail callback executed");
             ok(!$done_executed, "done callback not executed");
             ok($f->is_rejected, "f is rejected");
@@ -362,6 +420,9 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
             $cf->cancel();
             ok(!$nf->is_pending, "nf is not pending anymore");
             ok($nf->is_cancelled, "nf is cancelled");
+            memory_cycle_ok($f, "f is still free of cyclic ref");
+            memory_cycle_ok($nf, "nf is still free of cyclic ref");
+            memory_cycle_ok($cf, "cf is still free of cyclic ref");
         };
     }
 }
@@ -377,6 +438,8 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 $fail_executed = 1;
                 return create_return($case_ret, qw(a b c));
             });
+            memory_cycle_ok($f, "f is free of cyclic ref");
+            memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
                 ok($f->is_pending, "f is pending");
                 ok($nf->is_pending, "nf is pending");
@@ -385,6 +448,8 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
             ok(!$fail_executed, "fail callback is not executed");
             ok($nf->is_fulfilled, "nf is fulfilled");
             is_deeply([$nf->get], [1,2,3], "nf result OK");
+            memory_cycle_ok($f, "f is still free of cyclic ref");
+            memory_cycle_ok($nf, "nf is still free of cyclic ref");
         };
     }
 }
@@ -400,6 +465,8 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 $done_executed = 1;
                 return create_return($case_ret, qw(a b c));
             });
+            memory_cycle_ok($f, "f is free of cyclic ref");
+            memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
                 ok($f->is_pending, "f is pending");
                 ok($nf->is_pending, "nf is pending");
@@ -408,6 +475,8 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
             ok(!$done_executed, "done callback is not executed");
             ok($nf->is_rejected, "nf is rejected");
             is_deeply([$nf->failure], [1,2,3], "nf failure OK");
+            memory_cycle_ok($f, "f is still free of cyclic ref");
+            memory_cycle_ok($nf, "nf is still free of cyclic ref");
         };
     }
 }
@@ -427,6 +496,8 @@ foreach my $case_invo (qw(pending_cancel immediate_cancel)) {
                     $fail_executed = 1;
                     return create_return($case_ret, qw(a b c));
                 });
+                memory_cycle_ok($f, "f is free of cyclic ref");
+                memory_cycle_ok($nf, "nf is free of cyclic ref");
                 if(not is_immediate($case_invo)) {
                     ok(!$done_executed, "done callback not executed");
                     ok(!$fail_executed, "fail callback not executed");
@@ -439,6 +510,8 @@ foreach my $case_invo (qw(pending_cancel immediate_cancel)) {
                 ok($f->is_cancelled, "f is cancelled");
                 ok(!$nf->is_pending, "nf is not pending");
                 ok($nf->is_cancelled, "nf is cancelled");
+                memory_cycle_ok($f, "f is free of cyclic ref");
+                memory_cycle_ok($nf, "nf is free of cyclic ref");
             };
         }
     }

@@ -5,6 +5,7 @@ use FindBin;
 use lib "$FindBin::RealBin";
 use testlib::Utils qw(newf filter_callbacks);
 use Future::Q;
+use Test::Memory::Cycle;
 
 note("------ tests to cancel next_future of then");
 
@@ -16,11 +17,15 @@ note("------ tests to cancel next_future of then");
     }, sub {
         fail("this should not be executed.");
     });
+    memory_cycle_ok($f, "f is free of cyclic ref");
+    memory_cycle_ok($nf, "nf is free of cyclic ref");
     ok($f->is_pending, "f is pending");
     ok($nf->is_pending, "nf is pending");
     $nf->cancel();
     ok($nf->is_cancelled, "nf is cancelled");
     ok($f->is_cancelled, "If invocant future (f) is still pending, f is cancelled when nf is cancelled.");
+    memory_cycle_ok($f, "f is still free of cyclic ref");
+    memory_cycle_ok($nf, "nf is still free of cyclic ref");
 }
 
 foreach my $case (
@@ -43,8 +48,14 @@ foreach my $case (
     is($callbacked, 1, "callback executed once");
     ok($nf->is_pending, "nf is pending");
     ok($rf->is_pending, "rf is pending");
+    memory_cycle_ok($case->{invo}, "invocant future is free of cyclic ref");
+    memory_cycle_ok($nf, "nf is free of cyclic ref");
+    memory_cycle_ok($rf, "rf is free of cyclic ref");
     $nf->cancel();
     ok($rf->is_cancelled, "If returned future (rf) is pending, rf is cancelled when nf is cancelled.");
+    memory_cycle_ok($case->{invo}, "invocant future is still free of cyclic ref");
+    memory_cycle_ok($nf, "nf is still free of cyclic ref");
+    memory_cycle_ok($rf, "rf is still free of cyclic ref");
 }
 
 
