@@ -78,14 +78,11 @@ sub try {
 
 sub then {
     my ($self, $on_fulfilled, $on_rejected) = @_;
-    if(!defined($on_fulfilled) && !defined($on_rejected)) {
-        croak("You must specify either on_fulfilled or on_rejected parameter");
-    }
     if(defined($on_fulfilled) && ref($on_fulfilled) ne "CODE") {
-        croak("on_fulfilled parameter must be a code-ref");
+        $on_fulfilled = undef;
     }
     if(defined($on_rejected) && ref($on_rejected) ne "CODE") {
-        croak("on_rejected parameter must be a code-ref");
+        $on_rejected = undef;
     }
     my $class = ref($self);
     $self->_q_set_failure_handled();
@@ -366,9 +363,9 @@ TODO: Clean up documentation
 
 =head2 $future = Future::Q->fcall($func, @args)
 
-=head2 $next_future = $future->then($on_fulfilled, [$on_rejected])
+=head2 $next_future = $future->then([$on_fulfilled, $on_rejected])
 
-=head2 $next_future = $future->catch($on_rejected)
+=head2 $next_future = $future->catch([$on_rejected])
 
 Alias of $future->then(undef, $on_rejected).
 
@@ -425,12 +422,15 @@ Call C<fulfill()> or C<reject()> explicitly instead.
 
 TODO: erase the memo
 
-  - つか、strict featureについてはthen()さえ検証できれば20-singleと30-chainedは要らない気がしてきた。
-    それはFuture::Qの推奨する使い方じゃない。then()とcatch()な。
-  - Future::Qの推奨する使い方は、then()とon_cancel()のみ。20-singleに関してはthen()を呼ばないケースのみ検証すればいい。
-  - あと、コールバック戻り値で際どいケース(空returnとかFutureとその他の値のリストとか)もテスト
-    これはtry()メソッドでやればいいか。
+  - テストと実装は完了。あとはドキュメントを書いてパッケージング！
+  - Future::Qの推奨する使い方は、then(), catch(), on_cancel()のみ。
   - deferredとpromiseの区別がないことを明記
+  - 第4の状態 "cancelled" があることを明記
+  - thenコールバックはimmediateに実行される可能性があることを明記。
+  - TODO: then()のon_fulfilledとon_rejectedは両方共optionalで、
+          code-ref以外が与えられた場合は単に無視する。
+  - TODO: then()あらゆるケースにおいて、invocant_futureとnext_futureは
+          別のオブジェクトであることをテスト
 
 
 

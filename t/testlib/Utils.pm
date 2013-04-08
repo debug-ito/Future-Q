@@ -38,6 +38,7 @@ sub filter_callbacks {
         on_done => sub { ($on_done) },
         on_fail => sub { (undef, $on_fail) },
         both    => sub { ($on_done, $on_fail) },
+        none    => sub { () },
     );
     return $switch{$case_arg}->();
 }
