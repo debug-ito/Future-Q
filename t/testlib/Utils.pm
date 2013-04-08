@@ -6,7 +6,7 @@ use Future::Q;
 use Test::Builder;
 use Test::More;
 
-our @EXPORT_OK = qw(newf init_warn_handler test_log_num filter_callbacks);
+our @EXPORT_OK = qw(newf init_warn_handler test_log_num filter_callbacks is_immediate);
 
 my @logs = ();
 
@@ -43,5 +43,17 @@ sub filter_callbacks {
     return $switch{$case_arg}->();
 }
 
+sub is_immediate {
+    my ($case_string) = @_;
+    my %switch = (
+        immediate_done => sub { 1 },
+        immediate_fail => sub { 1 },
+        immediate_cancel => sub { 1 },
+        pending_done => sub { 0 },
+        pending_fail => sub { 0 },
+        pending_cancel => sub { 0 },
+    );
+    return $switch{$case_string}->();
+}
 
 1;

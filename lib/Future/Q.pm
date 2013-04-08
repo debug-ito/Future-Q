@@ -88,7 +88,7 @@ sub then {
     $self->_q_set_failure_handled();
     
     my $next_future = $self->new;
-    my $return_future;
+    my $return_future_for_next;
     $self->on_ready(sub {
         my $invo_future = shift;
         if($invo_future->is_cancelled) {
@@ -97,38 +97,39 @@ sub then {
         }
 
         ## determine return_future
-        $return_future = $invo_future;
+        my $return_future = $invo_future;
         if($invo_future->is_rejected && defined($on_rejected)) {
             $return_future = $class->try($on_rejected, $invo_future->failure);
         }elsif($invo_future->is_fulfilled && defined($on_fulfilled)) {
             $return_future = $class->try($on_fulfilled, $invo_future->get);
         }
         $return_future->_q_set_failure_handled();
+        $return_future_for_next = $return_future;
+        weaken($return_future_for_next);
 
         ## transfer the results of return_future to next_future
         $return_future->on_ready(sub {
-            my $rf = shift;
-            if($rf->is_cancelled) {
+            my $return_future = shift;
+            if($return_future->is_cancelled) {
                 $next_future->cancel() if $next_future->is_pending;
                 return;
             }
             return if !$next_future->is_pending;
-            if($rf->is_rejected) {
-                $next_future->reject($rf->failure);
+            if($return_future->is_rejected) {
+                $next_future->reject($return_future->failure);
             }else {
-                $next_future->fulfill($rf->get);
+                $next_future->fulfill($return_future->get);
             }
         });
     });
     if($next_future->is_pending) {
         weaken(my $invo_future = $self);
-        weaken(my $return_future = $return_future);
         $next_future->on_cancel(sub {
             if(defined($invo_future) && $invo_future->is_pending) {
                 $invo_future->cancel();
             }
-            if(defined($return_future) && $return_future->is_pending) {
-                $return_future->cancel();
+            if(defined($return_future_for_next) && $return_future_for_next->is_pending) {
+                $return_future_for_next->cancel();
             }
         });
     }
@@ -427,8 +428,6 @@ TODO: erase the memo
   - deferredとpromiseの区別がないことを明記
   - 第4の状態 "cancelled" があることを明記
   - thenコールバックはimmediateに実行される可能性があることを明記。
-  - TODO: then()のon_fulfilledとon_rejectedは両方共optionalで、
-          code-ref以外が与えられた場合は単に無視する。
   - TODO: then()あらゆるケースにおいて、invocant_futureとnext_futureは
           別のオブジェクトであることをテスト
 

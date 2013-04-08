@@ -4,7 +4,7 @@ use Test::More;
 use Test::Memory::Cycle;
 use FindBin;
 use lib "$FindBin::RealBin";
-use testlib::Utils qw(newf init_warn_handler test_log_num filter_callbacks);
+use testlib::Utils qw(newf init_warn_handler test_log_num filter_callbacks is_immediate);
 use Test::Builder;
 use Carp;
 
@@ -53,19 +53,6 @@ sub create_return {
         immediate_cancel => sub { newf()->cancel() },
     );
     return $switch{$case_ret}->();
-}
-
-sub is_immediate {
-    my ($case_string) = @_;
-    my %switch = (
-        immediate_done => sub { 1 },
-        immediate_fail => sub { 1 },
-        immediate_cancel => sub { 1 },
-        pending_done => sub { 0 },
-        pending_fail => sub { 0 },
-        pending_cancel => sub { 0 },
-    );
-    return $switch{$case_string}->();
 }
 
 test_log_num sub {
