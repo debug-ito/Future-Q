@@ -23,6 +23,7 @@ WriteMakefile(
         'Test::More' => 0,
         'FindBin' => 0,
         'Carp' => 0,
+        'Scalar::Util' => 0,
         'Test::MockModule' => "0.05",
         'Test::Identity' => 0,
         'Test::Memory::Cycle' => 0,

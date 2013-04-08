@@ -6,6 +6,7 @@ use FindBin;
 use lib "$FindBin::RealBin";
 use testlib::Utils qw(newf init_warn_handler test_log_num filter_callbacks is_immediate);
 use Test::Builder;
+use Scalar::Util qw(refaddr);
 use Carp;
 
 init_warn_handler();
@@ -38,6 +39,12 @@ sub test_then_case {
     note("--- Case: $case_invo, $case_arg, $case_ret");
     test_log_num $code, $num_warning, "expected $num_warning warnings";
     $tested_case{"$case_invo,$case_arg,$case_ret"}++;
+}
+
+sub isnt_identical {
+    my ($got, $not_exp, $msg) = @_;
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+    isnt(refaddr($got), refaddr($not_exp), $msg);
 }
 
 sub create_return {
@@ -77,6 +84,7 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 }, sub {
                     $fail_executed = 1;
                 });
+                isnt_identical($f, $nf, "f and nf are always different objects.");
                 memory_cycle_ok($f, "f is free of cyclic ref");
                 memory_cycle_ok($nf, "nf is free of cyclic ref");
                 if(not is_immediate($case_invo)) {
@@ -104,6 +112,7 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                     $done_executed = 1;
                     return create_return($case_ret, qw(a b c));
                 }, sub { $fail_executed = 1 });
+                isnt_identical($f, $nf, "f and nf are always different objects.");
                 memory_cycle_ok($f, "f is free of cyclic ref");
                 memory_cycle_ok($nf, "nf is free of cyclic ref");
                 if(not is_immediate($case_invo)) {
@@ -131,6 +140,7 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 $done_executed = 1;
                 return $cf;
             }, sub { $fail_executed = 1 });
+            isnt_identical($f, $nf, "f and nf are always different objects.");
             memory_cycle_ok($f, "f is free of cyclic ref");
             memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
@@ -163,6 +173,7 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 $done_executed = 1;
                 return $cf;
             }, sub { $fail_executed = 1 });
+            isnt_identical($f, $nf, "f and nf are always different objects.");
             memory_cycle_ok($f, "f is free of cyclic ref");
             memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
@@ -192,6 +203,7 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 $done_executed = 1;
                 return newf()->cancel();
             }, sub { $fail_executed = 1 });
+            isnt_identical($f, $nf, "f and nf are always different objects.");
             memory_cycle_ok($f, "f is free of cyclic ref");
             memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
@@ -217,6 +229,7 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                 $done_executed = 1;
                 return $cf;
             }, sub { $fail_executed = 1 });
+            isnt_identical($f, $nf, "f and nf are always different objects.");
             memory_cycle_ok($f, "f is free of cyclic ref");
             memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
@@ -253,6 +266,7 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                     $fail_executed = 1;
                     return create_return($case_ret, qw(a b c));
                 });
+                isnt_identical($f, $nf, "f and nf are always different objects.");
                 memory_cycle_ok($f, "f is free of cyclic ref");
                 memory_cycle_ok($nf, "nf is free of cyclic ref");
                 if(not is_immediate($case_invo)) {
@@ -280,6 +294,7 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                     $fail_executed = 1;
                     return create_return($case_ret, qw(a b c));
                 });
+                isnt_identical($f, $nf, "f and nf are always different objects.");
                 memory_cycle_ok($f, "f is free of cyclic ref");
                 memory_cycle_ok($nf, "nf is free of cyclic ref");
                 if(not is_immediate($case_invo)) {
@@ -307,6 +322,7 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 $fail_executed = 1;
                 return $cf;
             });
+            isnt_identical($f, $nf, "f and nf are always different objects.");
             memory_cycle_ok($f, "f is free of cyclic ref");
             memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
@@ -337,6 +353,7 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 $fail_executed = 1;
                 return $cf;
             });
+            isnt_identical($f, $nf, "f and nf are always different objects.");
             memory_cycle_ok($f, "f is free of cyclic ref");
             memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
@@ -365,6 +382,7 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 $fail_executed = 1;
                 return newf()->cancel();
             });
+            isnt_identical($f, $nf, "f and nf are always different objects.");
             memory_cycle_ok($f, "f is free of cyclic ref");
             memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
@@ -391,6 +409,7 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                 $fail_executed = 1;
                 return $cf;
             });
+            isnt_identical($f, $nf, "f and nf are always different objects.");
             memory_cycle_ok($f, "f is free of cyclic ref");
             memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
@@ -429,6 +448,7 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
                     $fail_executed = 1;
                     return create_return($case_ret, qw(a b c));
                 });
+                isnt_identical($f, $nf, "f and nf are always different objects.");
                 memory_cycle_ok($f, "f is free of cyclic ref");
                 memory_cycle_ok($nf, "nf is free of cyclic ref");
                 if(not is_immediate($case_invo)) {
@@ -462,6 +482,7 @@ foreach my $case_invo (qw(pending_fail immediate_fail)) {
                     $fail_executed = 1;
                     return create_return($case_ret, qw(a b c));
                 });
+                isnt_identical($f, $nf, "f and nf are always different objects.");
                 memory_cycle_ok($f, "f is free of cyclic ref");
                 memory_cycle_ok($nf, "nf is free of cyclic ref");
                 if(not is_immediate($case_invo)) {
@@ -495,6 +516,7 @@ foreach my $case_invo (qw(pending_cancel immediate_cancel)) {
                     $fail_executed = 1;
                     return create_return($case_ret, qw(a b c));
                 });
+                isnt_identical($f, $nf, "f and nf are always different objects.");
                 memory_cycle_ok($f, "f is free of cyclic ref");
                 memory_cycle_ok($nf, "nf is free of cyclic ref");
                 if(not is_immediate($case_invo)) {

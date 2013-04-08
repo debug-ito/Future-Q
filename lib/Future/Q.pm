@@ -428,8 +428,8 @@ TODO: erase the memo
   - deferredとpromiseの区別がないことを明記
   - 第4の状態 "cancelled" があることを明記
   - thenコールバックはimmediateに実行される可能性があることを明記。
-  - TODO: then()あらゆるケースにおいて、invocant_futureとnext_futureは
-          別のオブジェクトであることをテスト
+  - then()あらゆるケースにおいて、invocant_futureとnext_futureは
+    別のオブジェクトであることを明記
 
 
 
