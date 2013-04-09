@@ -9,7 +9,7 @@ use testlib::Utils qw(newf init_warn_handler test_log_num);
 
 init_warn_handler;
 
-note('--- OK/NG cases of single (non-chained) Futures');
+note('--- Reporting unhandled failure: OK/NG cases of single (non-chained) Futures');
 
 my @cases = (
     ## ** OK cases

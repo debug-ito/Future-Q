@@ -9,6 +9,7 @@ use Try::Tiny;
 
 init_warn_handler;
 
+note("----- Reporting unhandled failure");
 note("--- Dependent Futures methods:");
 note("---   rejected subfutures are all considered 'handled',");
 note("---   so be sure to use failed_futures() method if you are concerned.");
