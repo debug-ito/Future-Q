@@ -438,6 +438,7 @@ TODO: erase the memo
   - then()あらゆるケースにおいて、invocant_futureとnext_futureは
     別のオブジェクトであることを明記
   - try()にジャンク突っ込むとrejected future出すことを明記
+  - reject()の$exceptionにはtruthyな値しか入れられないことを明記
 
 
 =head1 SEE ALSO

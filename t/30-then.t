@@ -201,6 +201,7 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
             memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
                 ok(!$done_executed, "done callback not executed");
+                ok($f->is_pending, "f is pending");
                 ok($nf->is_pending, "nf is pending");
                 $f->fulfill(1,2,3);
             }
@@ -227,6 +228,7 @@ foreach my $case_invo (qw(pending_done immediate_done)) {
             memory_cycle_ok($nf, "nf is free of cyclic ref");
             if(not is_immediate($case_invo)) {
                 ok(!$done_executed, "done callback not called yet");
+                ok($f->is_pending, "f is pending");
                 ok($nf->is_pending, "nf is pending");
                 $f->fulfill(1,2,3);
             }
