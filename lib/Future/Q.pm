@@ -8,6 +8,8 @@ use Scalar::Util qw(refaddr blessed weaken);
 use Carp;
 use Try::Tiny ();
 
+our @CARP_NOT;
+
 ## ** lexical attributes to avoid collision of names.
 
 my %failure_handled_for = ();
@@ -58,7 +60,10 @@ sub _q_warn_failure {
 sub try {
     my ($class, $func, @args) = @_;
     if(!defined($func) || ref($func) ne "CODE") {
-        $func = sub { croak("func parameter for try() must be a code-ref") };
+        $func = sub {
+            local @CARP_NOT = ('Try::Tiny');
+            croak("func parameter for try() must be a code-ref");
+        };
     }
     my $result_future = Try::Tiny::try {
         my @results = $func->(@args);
