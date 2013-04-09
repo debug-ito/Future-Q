@@ -4,9 +4,8 @@ use Test::More;
 use Test::Memory::Cycle;
 use FindBin;
 use lib "$FindBin::RealBin";
-use testlib::Utils qw(newf init_warn_handler test_log_num filter_callbacks is_immediate);
+use testlib::Utils qw(newf init_warn_handler test_log_num filter_callbacks is_immediate isnt_identical);
 use Test::Builder;
-use Scalar::Util qw(refaddr);
 use Carp;
 
 init_warn_handler();
@@ -39,12 +38,6 @@ sub test_then_case {
     note("--- Case: $case_invo, $case_arg, $case_ret");
     test_log_num $code, $num_warning, "expected $num_warning warnings";
     $tested_case{"$case_invo,$case_arg,$case_ret"}++;
-}
-
-sub isnt_identical {
-    my ($got, $not_exp, $msg) = @_;
-    local $Test::Builder::Level = $Test::Builder::Level + 1;
-    isnt(refaddr($got), refaddr($not_exp), $msg);
 }
 
 sub create_return {

@@ -5,8 +5,9 @@ use Exporter qw(import);
 use Future::Q;
 use Test::Builder;
 use Test::More;
+use Scalar::Util qw(refaddr);
 
-our @EXPORT_OK = qw(newf init_warn_handler test_log_num filter_callbacks is_immediate);
+our @EXPORT_OK = qw(newf init_warn_handler test_log_num filter_callbacks is_immediate isnt_identical);
 
 my @logs = ();
 
@@ -54,6 +55,12 @@ sub is_immediate {
         pending_cancel => sub { 0 },
     );
     return $switch{$case_string}->();
+}
+
+sub isnt_identical {
+    my ($got, $not_exp, $msg) = @_;
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+    isnt(refaddr($got), refaddr($not_exp), $msg);
 }
 
 1;

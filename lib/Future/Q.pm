@@ -58,7 +58,7 @@ sub _q_warn_failure {
 sub try {
     my ($class, $func, @args) = @_;
     if(!defined($func) || ref($func) ne "CODE") {
-        croak("func parameter must be a code-ref");
+        $func = sub { croak("func parameter for try() must be a code-ref") };
     }
     my $result_future = Try::Tiny::try {
         my @results = $func->(@args);
@@ -430,7 +430,7 @@ TODO: erase the memo
   - thenコールバックはimmediateに実行される可能性があることを明記。
   - then()あらゆるケースにおいて、invocant_futureとnext_futureは
     別のオブジェクトであることを明記
-
+  - try()にジャンク突っ込むとrejected future出すことを明記
 
 
 =head1 SEE ALSO
