@@ -79,7 +79,9 @@ sub try {
     return $result_future;
 }
 
-*fcall = *try;
+sub fcall {
+    goto $_[0]->can('try');
+}
 
 sub then {
     my ($self, $on_fulfilled, $on_rejected) = @_;
