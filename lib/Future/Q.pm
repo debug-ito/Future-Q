@@ -188,7 +188,7 @@ foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
 
 =head1 NAME
 
-Future::Q - a strict future that will complain when it fails and is not handled.
+Future::Q - a thenable Future like Q.js
 
 =head1 VERSION
 
@@ -201,41 +201,184 @@ our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
+
+=head1 DESCRIPTION
+
+L<Future::Q> is a subclass of L<Future>.
+It extends its API with C<then()> and C<try()> etc, which are
+almost completely compatible with Kris Kowal's Q module for Javascript.
+
+For further information as to what Future (in a broad meaning) is all about, see:
+
+=over
+
+=item *
+
+L<Future> - the original class
+
+=item *
+
+L<Promises> - based on jQuery and YUI Deferred plug-in
+
+=item *
+
+L<Q module:http://documentup.com/kriskowal/q/> - Javascript module
+
+=back
+
+=head2 Future States
+
+Any L<Future::Q> object is in one of the following four states.
+
+=over
+
+=item 1.
+
+B<pending> - The operation represented by the L<Future::Q> object is now in progress.
+
+=item 2.
+
+B<fulfilled> - The operation succeeds and the L<Future::Q> object has its results.
+
+=item 3.
+
+B<rejected> - The operation fails and the L<Future::Q> object has the reason of the failure.
+
+=item 4.
+
+B<cancelled> - The operation has been cancelled.
+
+=back
+
+The state transition is one-way; "pending" -> "fulfilled", "pending" -> "rejected" or "pending" -> "cancelled".
+Once the state transitions to a non-pending state, its state never changes anymore.
+
+In the terminology of L<Future>, "done" and "failed" are used for "fulfilled" and "rejected", respectively.
+
+You can check the state of a L<Future::Q> with predicate methods C<is_pending()>, C<is_fulfilled()>, C<is_rejected()> and C<is_cancelled()>.
+
+
+=head1 CLASS METHODS
+
+In addition to all class methods in L<Future>,
+L<Future::Q> has the following class method.
+
+=head2 $future = Future::Q->new()
+
+Constructor. It creates a new pending L<Future::Q> object.
+
+=head2 $future = Future::Q->try($func, @args)
+
+=head2 $future = Future::Q->fcall($func, @args)
+
+Immediately executes the C<$func> with the arguments C<@args>, and returns
+a L<Future> object that represents the result of C<$func>.
+
+C<fcall()> method is an alias of C<try()> method.
+
+C<$func> is a subroutine reference. It is executed with the optional arguments C<@args>.
+
+The return value (C<$future>) is determined by the following rules:
+
+=over
+
+=item *
+
+If C<$func> returns a single L<Future> object, C<$future> is that object.
+
+=item *
+
+If C<$func> throws an exception, C<$future> is a rejected L<Future::Q> object with that exception.
+The exception is never rethrown to the upper stacks.
+
+=item *
+
+Otherwise, C<$future> is a fulfilled L<Future::Q> object with the values returned by C<$func>.
+
+=back
+
+If C<$func> is not a subrouine reference, it returns a rejected L<Future::Q> object.
+
+=head1 OBJECT METHODS
+
+In addition to all object methods in L<Future>, L<Future::Q> has the following object methods.
+
+=head2 $next_future = $future->then([$on_fulfilled, $on_rejected])
+
+Registers callback functions that are executed when C<$future> becomes fulfilled or rejected,
+and returns a new L<Future::Q> object that represents the result of the whole operation.
+
+C<$on_fulfilled> and C<on_rejected> are subroutine references that are executed
+when C<$future> is fulfilled or rejected, respectively.
+C<$on_fulfilled> and C<$on_rejected> are both optional.
+
+C<$next_future> is a new L<Future::Q> object.
+In a nutshell, it represents the result of C<$future> and the subsequent execution of C<$on_fulfilled>
+or C<$on_rejected> callback.
+
+In detail, the state of C<$next_future> is determined by the following rules.
+
+=over
+
+=back
+
+
+=head2 $next_future = $future->catch([$on_rejected])
+
+Alias of $future->then(undef, $on_rejected).
+
+=head2 $future = $future->fulfill(@result)
+
+Alias of done().
+
+=head2 $future = $future->reject($exception, @details)
+
+Alias of fail(), not die().
+
+=head2 $is_pending = $future->is_pending()
+
+=head2 $is_fulfilled = $future->is_fulfilled()
+
+=head2 $is_rejected = $future->is_rejected()
+
+
+=head1 EXAMPLE
+
+=head2 try() and then()
+
     use Future::Q;
-    
-    sub async_func_future {
-        my $f = Future::Q->new;
-        ## Assume other_async_func() always fails
-        other_async_func(
-            on_success => sub { $f->done(@_) },
-            on_failure => sub { $f->fail(@_) },
-        );
+
+    ## Values returned from try() callback are transformed into a
+    ## fulfilled Future::Q
+    Future::Q->try(sub {
+        return (1,2,3);
+    })->then(sub {
+        print join(",", @_), "\n"; ## -> 1,2,3
+    });
+
+    ## Exception thrown from try() callback is transformed into a
+    ## rejected Future::Q
+    Future::Q->try(sub {
+        die "oops!";
+    })->catch(sub {
+        my $e = shift;
+        print $e;       ## -> oops! at eg/try.pl line XX.
+    });
+
+    ## A Future returned from try() callback is returned as is.
+    my $f = Future::Q->new;
+    Future::Q->try(sub {
         return $f;
-    }
+    })->then(sub {
+        print "This is not executed.";
+    }, sub {
+        print join(",", @_), "\n";  ## -> a,b,c
+    });
+    $f->reject("a", "b", "c");
 
-    {
-        ### CASE 1: It complains
-        async_func_future();
-    }
 
-    {
-        ### CASE 2: It complains
-        async_func_future()->on_done(sub {
-            my $result = shift;
-            print "OK: $result\n";
-        });
-    }
 
-    {
-        ### CASE 3: It does NOT complain
-        async_func_future()->on_done(sub {
-            my $result = shift;
-            print "OK: $result\n";
-        })->on_fail(sub {
-            my $failure = shift;
-            print "NG: $failure\n";
-        });
-    }
+----------------------------------
 
 =head1 DESCRIPTION
 
@@ -355,41 +498,6 @@ It is even possible that some subfutures fail but the dependent future succeeds.
 
 =back
 
-
-=head1 METHODS
-
-L<Future::Q> inherits all the class and object methods from L<Future>.
-There is no extra public method.
-
-
-
-TODO: Clean up documentation
-
-=head2 $future = Future::Q->new()
-
-=head2 $future = Future::Q->try($func, @args)
-
-=head2 $future = Future::Q->fcall($func, @args)
-
-=head2 $next_future = $future->then([$on_fulfilled, $on_rejected])
-
-=head2 $next_future = $future->catch([$on_rejected])
-
-Alias of $future->then(undef, $on_rejected).
-
-=head2 $future = $future->fulfill(@result)
-
-Alias of done().
-
-=head2 $future = $future->reject($exception, @details)
-
-Alias of fail(), not die().
-
-=head2 $is_pending = $future->is_pending()
-
-=head2 $is_fulfilled = $future->is_fulfilled()
-
-=head2 $is_rejected = $future->is_rejected()
 
 =head1 MISSING METHODS
 
