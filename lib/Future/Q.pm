@@ -226,7 +226,7 @@ L<Q module:http://documentup.com/kriskowal/q/> - Javascript module
 
 =back
 
-=head2 Future States
+=head2 Terminology of Future States
 
 Any L<Future::Q> object is in one of the following four states.
 
@@ -320,8 +320,67 @@ In detail, the state of C<$next_future> is determined by the following rules.
 
 =over
 
+=item *
+
+While C<$future> is pending, C<$next_future> is pending.
+
+=item *
+
+When C<$future> is cancelled, neither C<$on_fulfilled> nor C<$on_rejected> is executed,
+and C<$next_future> becomes cancelled.
+
+=item *
+
+When C<$future> is fulfilled and C<$on_fulfilled> is not provided,
+C<$next_future> is fulfilled with the same values as C<$future>.
+
+=item *
+
+When C<$future> is rejected and C<$on_rejected> is not provided,
+C<$next_future> is rejected with the same values as C<$future>.
+
+=item *
+
+When C<$future> is fulfilled and C<$on_fulfilled> is provided,
+C<$on_fulfilled> is executed.
+In this case C<$next_future> represents the result of C<$on_fulfilled> callback (see below).
+
+=item *
+
+When C<$future> is rejected and C<$on_rejected> is provided,
+C<$on_rejected> is executed.
+In this case C<$next_future> represents the result of C<$on_rejected> callback (see below).
+
+=item *
+
+In the above two cases where C<$on_fulfilled> or C<$on_rejected> callback is executed,
+the following rules are applied to C<$next_future>.
+
+=over
+
+=item *
+
+If the callback returns a single L<Future> (call it C<$returned_future>),
+C<$next_future>'s state is synchronized with that of C<$returned_future>.
+
+=item *
+
+TODO: rejected?
+
+=item *
+
+TODO: otherwise?
+
 =back
 
+=back
+
+
+TODO: arguments for on_fulfilled or on_rejected?
+
+TODO: Note for immediate case.
+
+TODO: cancelling $next_future
 
 =head2 $next_future = $future->catch([$on_rejected])
 
