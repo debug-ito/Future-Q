@@ -188,7 +188,7 @@ foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
 
 =head1 NAME
 
-Future::Q - a thenable Future like Q.js
+Future::Q - a thenable Future like Q module for JavaScript
 
 =head1 VERSION
 
@@ -222,7 +222,7 @@ L<Promises> - based on jQuery and YUI Deferred plug-in
 
 =item *
 
-L<Q module:http://documentup.com/kriskowal/q/> - Javascript module
+L<Q module|http://documentup.com/kriskowal/q/> - Javascript module
 
 =back
 
@@ -239,10 +239,12 @@ B<pending> - The operation represented by the L<Future::Q> object is now in prog
 =item 2.
 
 B<fulfilled> - The operation succeeds and the L<Future::Q> object has its results.
+The results can be obtained by C<get()> method.
 
 =item 3.
 
 B<rejected> - The operation fails and the L<Future::Q> object has the reason of the failure.
+The reason of the failure can be obtained by C<failure()> method.
 
 =item 4.
 
@@ -251,12 +253,48 @@ B<cancelled> - The operation has been cancelled.
 =back
 
 The state transition is one-way; "pending" -> "fulfilled", "pending" -> "rejected" or "pending" -> "cancelled".
-Once the state transitions to a non-pending state, its state never changes anymore.
+Once the state moves to a non-pending state, its state never changes anymore.
 
 In the terminology of L<Future>, "done" and "failed" are used for "fulfilled" and "rejected", respectively.
 
 You can check the state of a L<Future::Q> with predicate methods C<is_pending()>, C<is_fulfilled()>, C<is_rejected()> and C<is_cancelled()>.
 
+=head2 Reporting Unhandled Failures
+
+L<Future::Q> warns you when a rejected L<Future::Q> object is destroyed without its failure handled.
+This is because ignoring a rejected L<Future::Q> is just as dangerous as ignoring a thrown exception.
+Any rejected L<Future::Q> object must be handled properly.
+
+When a rejected but unhandled L<Future::Q> is destroyed,
+the reason of the failure is printed through Perl's warning facility.
+You can capture them by setting C<$SIG{__WARN__}>.
+The warning messages can be evaluated to strings.
+(They ARE strings actually, but this may change in future versions)
+
+L<Future::Q> thinks failures of the following futures are "handled".
+
+=over
+
+=item *
+
+Futures that C<then()> or C<catch()> method has been called on.
+
+=item *
+
+Futures that are returned by C<$on_fulfilled> or C<$on_rejected> callbacks for C<then()> method.
+
+=item *
+
+Subfutures given to C<wait_all()>, C<wait_any()>, C<needs_all()> and C<needs_any()> method.
+
+=back
+
+So make sure to call C<catch()> method at the end of any callback chain.
+
+I also recommend always inspecting failed subfutures using C<failed_futures()> method
+in callbacks for dependent futures returned by C<wait_all()>, C<wait_any()>, C<needs_all()> and C<needs_any()>.
+This is because there may be multiple of failed subfutures.
+It is even possible that some subfutures fail but the dependent future succeeds.
 
 =head1 CLASS METHODS
 
@@ -305,12 +343,15 @@ In addition to all object methods in L<Future>, L<Future::Q> has the following o
 
 =head2 $next_future = $future->then([$on_fulfilled, $on_rejected])
 
-Registers callback functions that are executed when C<$future> becomes fulfilled or rejected,
+Registers callback functions that are executed when C<$future> is fulfilled or rejected,
 and returns a new L<Future::Q> object that represents the result of the whole operation.
 
-C<$on_fulfilled> and C<on_rejected> are subroutine references that are executed
-when C<$future> is fulfilled or rejected, respectively.
-C<$on_fulfilled> and C<$on_rejected> are both optional.
+C<$on_fulfilled> and C<$on_rejected> are subroutine references.
+When C<$future> is fulfilled, C<$on_fulfilled> callback is executed.
+Its arguments are the values of the C<$future> obtained by C<< $future->get >> method.
+When C<$future> is rejected, C<$on_rejected> callback is executed.
+Its arguments are the reason of the failure obtained by C<< $future->failure >> method.
+Both C<$on_fulfilled> and C<$on_rejected> are optional.
 
 C<$next_future> is a new L<Future::Q> object.
 In a nutshell, it represents the result of C<$future> and the subsequent execution of C<$on_fulfilled>
@@ -331,12 +372,12 @@ and C<$next_future> becomes cancelled.
 
 =item *
 
-When C<$future> is fulfilled and C<$on_fulfilled> is not provided,
+When C<$future> is fulfilled and C<$on_fulfilled> is C<undef>,
 C<$next_future> is fulfilled with the same values as C<$future>.
 
 =item *
 
-When C<$future> is rejected and C<$on_rejected> is not provided,
+When C<$future> is rejected and C<$on_rejected> is C<undef>,
 C<$next_future> is rejected with the same values as C<$future>.
 
 =item *
@@ -365,41 +406,60 @@ C<$next_future>'s state is synchronized with that of C<$returned_future>.
 
 =item *
 
-TODO: rejected?
+If the callback throws an exception,
+C<$next_future> is a rejected L<Future::Q> object with that exception.
+The exception is never rethrown to the upper stacks.
 
 =item *
 
-TODO: otherwise?
+Otherwise, C<$future> is a fulfilled L<Future::Q> object with the values returned
+by the callback.
 
 =back
 
 =back
 
+Note that the whole operation can be executed immediately.
+For example, if C<$future> is already fulfilled,
+C<$on_fulfilled> callback is executed before C<$next_future> is returned.
+And if C<$on_fulfilled> callback does not return a pending L<Future>,
+C<$next_future> is already in a non-pending state.
 
-TODO: arguments for on_fulfilled or on_rejected?
+You can call C<cancel()> method on C<$next_future>.
+If C<$future> is pending, it is cancelled when C<$next_future> is cancelled.
+If either C<$on_fulfilled> or C<$on_rejected> is executed and its C<$returned_future>
+is pending, the C<$returned_future> is cancelled when C<$next_future> is cancelled.
 
-TODO: Note for immediate case.
-
-TODO: cancelling $next_future
+You should not call C<fulfill()> or C<reject()> on C<$next_future>.
 
 =head2 $next_future = $future->catch([$on_rejected])
 
-Alias of $future->then(undef, $on_rejected).
+Alias of C<< $future->then(undef, $on_rejected) >>.
 
 =head2 $future = $future->fulfill(@result)
 
-Alias of done().
+Fulfills the pending C<$future> with the values C<@result>.
+
+This method is an alias of C<< $future->done(@result) >>.
 
 =head2 $future = $future->reject($exception, @details)
 
-Alias of fail(), not die().
+Rejects the pending C<$future> with the C<$exception> and optional C<@details>.
+C<$exception> must be a scalar evaluated as boolean true.
+
+This method is an alias of C<fail()> method (not C<die()> method).
 
 =head2 $is_pending = $future->is_pending()
 
+Returns true if the C<$future> is pending. It returns false otherwise.
+
 =head2 $is_fulfilled = $future->is_fulfilled()
+
+Returns true if the C<$future> is fulfilled. It returns false otherwise.
 
 =head2 $is_rejected = $future->is_rejected()
 
+Returns true if the C<$future> is rejected. It returns false otherwise.
 
 =head1 EXAMPLE
 
@@ -437,128 +497,24 @@ Alias of fail(), not die().
 
 
 
-----------------------------------
+=head1 DIFFERENCE FROM Q
 
-=head1 DESCRIPTION
-
-L<Future::Q> is a subclass of L<Future>.
-It extends the original L<Future> so that it warns you
-when a L<Future::Q> object in the failure state is
-destroyed but its failure has never been handled.
+Although L<Future::Q> tries to emulate the behavior of Q module for JavaScript as much as possible,
+there is difference in some repects.
 
 
-=head2 What's the benefit of Future::Q?
+TODO:
 
-The benefit of using L<Future::Q> instead of regular L<Future>
-is that it can detect the possibly dangerous situation when
-a future fails but its failure is never handled.
-
-In the L</SYNOPSIS>, the C<async_func_future()> function returns
-a future that may either succeed or fail. B<Let's assume it always fails in this example>.
-
-However, with regular L<Future> it is very easy to ignore failures
-if you are not very careful.
-
-For example, if you are interested only in the side-effect of C<async_func_future()> but
-not in its result, you are very likely to write CASE 1, that is, just throwing away the
-returned future. Or if you are too lazy to set the failure handler, you will probably
-write CASE 2. In both cases, the returned failure is discarded.
-
-If this happens with L<Future::Q>, it prints warning message
-to motivate you to handle the failures properly.
-
-L<Future::Q> is even more beneficial when you use chaining methods such as C<and_then()>.
-This is because as of L<Future> 0.11 B<< exceptions thrown in callbacks for C<and_then()>, C<or_else>
-and C<followed_by()> are caught and transformed into failed futures. >>
-
-For example, the following code seems to involve no failed future.
-
-    {
-        ### CASE 4: It complains (if bad_func() throws an exception)
-        my $f_result = Future::Q->new->done("start")->and_then(sub {
-            my $f = shift;
-            my $result = bad_func($f->get);
-            return Future::Q->new->done($result);
-        });
-    }
-
-However, if C<bad_func()> throws an exception, it is silently transformed into a failed future.
-As a result, C<$f_result> becomes a failed future.
-If you just discard C<$f_result> like this example, the exception is never handled.
-What's worse, if you don't use L<Future::Q>, the exception is never visible to you,
-which can lead to very hard-to-track bugs.
-
-L<Future::Q> makes failed futures visible to you.
-With L<Future::Q> you will not miss unexpected failed futures in most cases.
+  - deferredとpromiseの区別がないことを明記
+  - 第4の状態 "cancelled" があることを明記
+  - thenコールバックはimmediateに実行される可能性があることを明記。
+  - reject()の$exceptionにはtruthyな値しか入れられないことを明記
 
 
-=head2 When and how does a Future::Q complain?
+=head2 Missing Methods
 
-A failed L<Future::Q> object prints warning messages when it is destroyed.
-
-The warning messages are printed through Perl's warning facility.
-You can capture them by setting C<< $SIG{__WARN__}. >>
-The warning messages can be evaluated to strings.
-(They ARE strings actually, but this may change in future versions)
-
-
-=head2 How can I convince a Future::Q that its failure is handled?
-
-To prevent a failed L<Future::Q> from complaining,
-you have to convince it that its failure is handled before it's destroyed.
-
-L<Future::Q> thinks failures of the following futures are handled.
-
-=over
-
-=item *
-
-Futures that C<on_fail()> or C<on_ready()> method is called on.
-
-=item *
-
-Futures that C<and_then()>, C<or_else()> or C<followed_by()> method is called on.
-
-=item *
-
-Futures returned by the callbacks for C<and_then()>, C<or_else()> or C<followed_by()> method.
-
-=item *
-
-Subfutures given to C<wait_all()>, C<wait_any()>, C<needs_all()> or C<needs_any()> method.
-
-=back
-
-Therefore, remember to call C<on_fail()> on any future that may fail and
-handle the failure in its callback.
-
-
-=head1 CAVEAT
-
-If you don't want to miss failed futures, I recommend you to follow the guidelines below.
-
-=over
-
-=item *
-
-Do not use C<on_ready()> or C<followed_by()> method unless it's absolutely necessary.
-In callbacks for these methods you may forget to handle failures,
-but L<Future::Q> thinks they are handled.
-
-
-=item *
-
-Always inspect failed subfutures by C<failed_futures()> method
-in callbacks for dependent futures returned by C<wait_all()>, C<wait_any()>,
-C<needs_all()> and C<needs_any()>.
-
-This is because there may be multiple of failed subfutures.
-It is even possible that some subfutures fail but the dependent future succeeds.
-
-=back
-
-
-=head1 MISSING METHODS
+Some methods in Q module are missing in L<Future::Q>.
+Some of them worth noting are listed below.
 
 =over
 
