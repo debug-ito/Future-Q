@@ -17,8 +17,6 @@ t/40-unhandled-single.t
 t/41-unhandled-dependent.t
 t/42-unhandled-position.t
 t/50-failure-position.t
-t/drop_support/30-chained.t
-t/drop_support/50-repeat.t
 t/testlib/Utils.pm
 xt/manifest.t
 xt/pod.t
