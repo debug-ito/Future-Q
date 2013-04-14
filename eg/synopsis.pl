@@ -1,65 +1,55 @@
 use strict;
 use warnings;
 
+our $result_of_func = "on_success";
+
 sub other_async_func {
     my (%args) = @_;
     warn "--- other_async_func\n";
     @_ = ("failure");
-    goto $args{on_failure};
+    goto $args{$result_of_func};
 }
 
 sub bad_func {
     die "something terrible happened.";
 }
 
+sub do_some_processing {
+    return @_;
+}
 
-{
-    use Future::Strict;
+
+foreach my $this_result_of_func (qw(on_success on_failure)) {
+    local $result_of_func = $this_result_of_func;
+    warn "------ case: $this_result_of_func\n";
+
+    
+    use Future::Q;
 
     sub async_func_future {
-        my $f = Future::Strict->new;
-        ## Assume other_async_func() always fails
-        other_async_func(
-            on_success => sub { $f->done(@_) },
-            on_failure => sub { $f->fail(@_) },
+        my @args = @_;
+        my $f = Future::Q->new;
+        other_async_func(   ## This is a regular callback-style async function
+            args => \@args,
+            on_success => sub { $f->fulfill(@_) },
+            on_failure => sub { $f->reject(@_) },
         );
         return $f;
     }
 
-    {
-        ### CASE 1: It complains
-        async_func_future();
-    }
+    async_func_future()->then(sub {
+        my @results = @_;
+        my @processed_values = do_some_processing(@results);
+        return @processed_values;
+    })->then(sub {
+        my @values = @_;   ## same values as @processed_values
+        return async_func_future(@values);
+    })->then(sub {
+        warn "Operation finished.\n";
+    })->catch(sub {
+        ## failure handler
+        my $error = shift;
+        warn "Error: $error\n";
+    });
 
-    {
-        ### CASE 2: It complains
-        async_func_future()->on_done(sub {
-            my $result = shift;
-            print "OK: $result\n";
-        });
-    }
-
-    {
-        ### CASE 3: It does NOT complain
-        async_func_future()->on_done(sub {
-            my $result = shift;
-            print "OK: $result\n";
-        })->on_fail(sub {
-            my $failure = shift;
-            print "NG: $failure\n";
-        });
-    }
 }
-
-
-{
-    {
-        ### CASE 4: It complains (if bad_func() throws an exception)
-        my $f_result = Future::Strict->new->done("start")->and_then(sub {
-            my $f = shift;
-            my $result = bad_func($f->get);
-            return Future::Strict->new->done($result);
-        });
-    }
-}
-

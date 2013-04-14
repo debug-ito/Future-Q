@@ -185,6 +185,11 @@ foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
     };
 }
 
+our $VERSION = '0.01';
+
+1;
+
+__END__
 
 =head1 NAME
 
@@ -194,13 +199,35 @@ Future::Q - a thenable Future like Q module for JavaScript
 
 Version 0.01
 
-=cut
-
-our $VERSION = '0.01';
-
-
 =head1 SYNOPSIS
 
+    use Future::Q;
+
+    sub async_func_future {
+        my @args = @_;
+        my $f = Future::Q->new;
+        other_async_func(   ## This is a regular callback-style async function
+            args => \@args,
+            on_success => sub { $f->fulfill(@_) },
+            on_failure => sub { $f->reject(@_) },
+        );
+        return $f;
+    }
+
+    async_func_future()->then(sub {
+        my @results = @_;
+        my @processed_values = do_some_processing(@results);
+        return @processed_values;
+    })->then(sub {
+        my @values = @_;   ## same values as @processed_values
+        return async_func_future(@values);
+    })->then(sub {
+        warn "Operation finished.\n";
+    })->catch(sub {
+        ## failure handler
+        my $error = shift;
+        warn "Error: $error\n";
+    });
 
 =head1 DESCRIPTION
 
@@ -208,13 +235,15 @@ L<Future::Q> is a subclass of L<Future>.
 It extends its API with C<then()> and C<try()> etc, which are
 almost completely compatible with Kris Kowal's Q module for Javascript.
 
-For further information as to what Future (in a broad meaning) is all about, see:
+Basically a Future (in a broad meaning) represents an operation (whether it's in progress
+or finished) and its results.
+For further information as to what Future is all about, see:
 
 =over
 
 =item *
 
-L<Future> - the original class
+L<Future> - the base class
 
 =item *
 
@@ -238,12 +267,12 @@ B<pending> - The operation represented by the L<Future::Q> object is now in prog
 
 =item 2.
 
-B<fulfilled> - The operation succeeds and the L<Future::Q> object has its results.
+B<fulfilled> - The operation has succeeded and the L<Future::Q> object has its results.
 The results can be obtained by C<get()> method.
 
 =item 3.
 
-B<rejected> - The operation fails and the L<Future::Q> object has the reason of the failure.
+B<rejected> - The operation has failed and the L<Future::Q> object has the reason of the failure.
 The reason of the failure can be obtained by C<failure()> method.
 
 =item 4.
@@ -258,6 +287,19 @@ Once the state moves to a non-pending state, its state never changes anymore.
 In the terminology of L<Future>, "done" and "failed" are used for "fulfilled" and "rejected", respectively.
 
 You can check the state of a L<Future::Q> with predicate methods C<is_pending()>, C<is_fulfilled()>, C<is_rejected()> and C<is_cancelled()>.
+
+=head2 then() Method
+
+Using C<then()> method, you can register callback functions with a L<Future::Q> object.
+The callback functions are executed when the L<Future::Q> object is fulfilled or rejected.
+You can obtain and use the results of the L<Future::Q> within the callbacks.
+
+The return value of C<then()> method represents the results of the callback function (if it's executed).
+Since the callback function is also an operation in progress, the return value of C<then()> is naturally a L<Future::Q> object.
+By calling C<then()> method on the returned L<Future::Q> object, you can chain a series of operations
+that are executed sequentially.
+
+See the specification of C<then()> method below for details.
 
 =head2 Reporting Unhandled Failures
 
@@ -289,7 +331,7 @@ Subfutures given to C<wait_all()>, C<wait_any()>, C<needs_all()> and C<needs_any
 
 =back
 
-So make sure to call C<catch()> method at the end of any callback chain.
+So make sure to call C<catch()> method at the end of any callback chain to handle failures.
 
 I also recommend always inspecting failed subfutures using C<failed_futures()> method
 in callbacks for dependent futures returned by C<wait_all()>, C<wait_any()>, C<needs_all()> and C<needs_any()>.
@@ -299,7 +341,7 @@ It is even possible that some subfutures fail but the dependent future succeeds.
 =head1 CLASS METHODS
 
 In addition to all class methods in L<Future>,
-L<Future::Q> has the following class method.
+L<Future::Q> has the following class methods.
 
 =head2 $future = Future::Q->new()
 
@@ -335,7 +377,7 @@ Otherwise, C<$future> is a fulfilled L<Future::Q> object with the values returne
 
 =back
 
-If C<$func> is not a subrouine reference, it returns a rejected L<Future::Q> object.
+If C<$func> is not a subroutine reference, it returns a rejected L<Future::Q> object.
 
 =head1 OBJECT METHODS
 
@@ -407,13 +449,12 @@ C<$next_future>'s state is synchronized with that of C<$returned_future>.
 =item *
 
 If the callback throws an exception,
-C<$next_future> is a rejected L<Future::Q> object with that exception.
+C<$next_future> is rejected with that exception.
 The exception is never rethrown to the upper stacks.
 
 =item *
 
-Otherwise, C<$future> is a fulfilled L<Future::Q> object with the values returned
-by the callback.
+Otherwise, C<$next_future> is fulfilled with the values returned by the callback.
 
 =back
 
@@ -502,13 +543,29 @@ Returns true if the C<$future> is rejected. It returns false otherwise.
 Although L<Future::Q> tries to emulate the behavior of Q module for JavaScript as much as possible,
 there is difference in some repects.
 
+=over
 
-TODO:
+=item *
 
-  - deferredとpromiseの区別がないことを明記
-  - 第4の状態 "cancelled" があることを明記
-  - thenコールバックはimmediateに実行される可能性があることを明記。
-  - reject()の$exceptionにはtruthyな値しか入れられないことを明記
+L<Future::Q> has both roles of "promise" and "deferred" in Q.
+Currently there is no read-only future like "promise".
+
+=item *
+
+L<Future::Q> has the fourth state "cancelled", while promise in Q does not.
+
+=item *
+
+In L<Future::Q>, callbacks for C<then()> method can be executed immediately.
+This is because L<Future::Q> does not assume any event loop mechanism.
+
+=item *
+
+In L<Future::Q>, you must pass a truthy value to C<reject()> method.
+This is required by the original L<Future> class.
+
+=back
+
 
 
 =head2 Missing Methods
@@ -520,7 +577,7 @@ Some of them worth noting are listed below.
 
 =item promise.fail()
 
-Unfortunately L<Future> already has C<fail()> method for a completely different meaning.
+L<Future> already has C<fail()> method for a completely different meaning.
 Use C<catch()> method instead.
 
 =item promise.progress(), deferred.notify(), promise.finally(), promise.fin()
@@ -530,7 +587,7 @@ but they are not supported in this version of L<Future::Q>.
 
 =item promise.done()
 
-Unfortunately L<Future> already has C<done()> method for a completely different meaning.
+L<Future> already has C<done()> method for a completely different meaning.
 There is no corresponding method in this version of L<Future::Q>.
 
 =item promise.fcall() (object method)
@@ -548,20 +605,6 @@ This is an interesting method, but it's not supported in this version of L<Futur
 Call C<fulfill()> or C<reject()> explicitly instead.
 
 =back
-
-=head1 MEMO
-
-TODO: erase the memo
-
-  - テストと実装は完了。あとはドキュメントを書いてパッケージング！
-  - Future::Qの推奨する使い方は、then(), catch(), on_cancel()のみ。
-  - deferredとpromiseの区別がないことを明記
-  - 第4の状態 "cancelled" があることを明記
-  - thenコールバックはimmediateに実行される可能性があることを明記。
-  - then()あらゆるケースにおいて、invocant_futureとnext_futureは
-    別のオブジェクトであることを明記
-  - try()にジャンク突っ込むとrejected future出すことを明記
-  - reject()の$exceptionにはtruthyな値しか入れられないことを明記
 
 
 =head1 SEE ALSO
@@ -590,5 +633,3 @@ See http://dev.perl.org/licenses/ for more information.
 
 =cut
 
-
-1; # End of Future::Q
