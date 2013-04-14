@@ -5,6 +5,9 @@ use FindBin;
 use lib ($FindBin::RealBin);
 use testlib::Utils qw(newf);
 use Test::Builder;
+use Carp;
+
+$Carp::Verbose = 0;
 
 sub test_error_here {
     my ($f, $msg) = @_;
