@@ -1,0 +1,7 @@
+\.git
+\.gitignore
+^Makefile$
+^doc
+^blib
+^pm_to_blib
+^MANIFEST\.
