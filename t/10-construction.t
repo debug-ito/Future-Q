@@ -18,7 +18,7 @@ note('--- all constructors should return Future::Q object.');
     $f->done; $g->done;
 }
 
-foreach my $method (qw(followed_by and_then or_else)) {
+foreach my $method (qw(followed_by and_then or_else else then)) {
     my $f = new_ok('Future::Q');
     my $g = $f->$method(sub {
         return Future->new->done()
