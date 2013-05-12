@@ -13,7 +13,7 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     PREREQ_PM => {
-        'Future' => '0.12',
+        'Future' => '0.13',
         'Devel::GlobalDestruction' => 0,
         'Scalar::Util' => 0,
         'Carp' => 0,
