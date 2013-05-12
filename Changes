@@ -1,5 +1,14 @@
 Revision history for Future-Q
 
+0.020    2013/05/12
+         - Support Future 0.13
+           POD is updated now that Future has its own then() method.
+         - [BUG FIX] It crashed when a Future object (not a Future::Q object) was returned
+           from then() callbacks. This bug is fixed.
+         - Drop support for Future::Utils::repeat() in the test suite. repeat() may not
+           go well with Future::Q's feature of reporting unhandled failures.
+         - Now Module::Build is used for packaging.
+
 0.012    2013/04/14
          Initial release.
 
