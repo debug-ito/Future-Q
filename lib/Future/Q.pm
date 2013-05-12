@@ -390,6 +390,28 @@ In addition to all object methods in L<Future>, L<Future::Q> has the following o
 Registers callback functions that are executed when C<$future> is fulfilled or rejected,
 and returns a new L<Future::Q> object that represents the result of the whole operation.
 
+B<< Difference from then() method of L<Future> >>
+
+L<Future::Q> overrides the C<then()> method of the base L<Future> class.
+Basically they behave in the same way, but in C<then()> method of L<Future::Q>,
+
+=over
+
+=item *
+
+the callback funcions do not have to return a L<Future> object.
+If they do not, the return values are automatically transformed into a fulfilled L<Future::Q> object.
+
+=item *
+
+it will not warn you even if you call the C<then()> method in void context.
+
+=back
+
+B<< Detailed specification >>
+
+Below is the detailed specification of C<then()> method.
+
 C<$on_fulfilled> and C<$on_rejected> are subroutine references.
 When C<$future> is fulfilled, C<$on_fulfilled> callback is executed.
 Its arguments are the values of the C<$future> obtained by C<< $future->get >> method.
