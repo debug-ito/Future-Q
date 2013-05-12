@@ -27,6 +27,9 @@ my $builder = Module::Build->new(
     },
     add_to_cleanup      => [ 'Future-Q-*' ],
     ## create_makefile_pl => 'traditional',
+    no_index => {
+        directory => ["t", "xt", "eg", "inc"]
+    }
 );
 
 $builder->create_build_script();
