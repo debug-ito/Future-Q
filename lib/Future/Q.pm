@@ -110,7 +110,9 @@ sub then {
         }elsif($invo_future->is_fulfilled && defined($on_fulfilled)) {
             $return_future = $class->try($on_fulfilled, $invo_future->get);
         }
-        $return_future->_q_set_failure_handled();
+        if($return_future->can("_q_set_failure_handled")) {
+            $return_future->_q_set_failure_handled();
+        }
         $return_future_for_next = $return_future;
         weaken($return_future_for_next);
 
@@ -122,7 +124,7 @@ sub then {
                 return;
             }
             return if !$next_future->is_pending;
-            if($return_future->is_rejected) {
+            if($return_future->failure) {
                 $next_future->reject($return_future->failure);
             }else {
                 $next_future->fulfill($return_future->get);
@@ -135,7 +137,7 @@ sub then {
             if(defined($invo_future) && $invo_future->is_pending) {
                 $invo_future->cancel();
             }
-            if(defined($return_future_for_next) && $return_future_for_next->is_pending) {
+            if(defined($return_future_for_next) && !$return_future_for_next->is_ready) {
                 $return_future_for_next->cancel();
             }
         });
