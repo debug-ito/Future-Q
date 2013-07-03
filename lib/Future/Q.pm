@@ -621,12 +621,16 @@ Use C<< Future::Q->fcall() >>.
 
 =item promise.all(), promise.allResolve(), promise.allSettled()
 
-Use C<< Future::Q->needs_all() >> and C<< Future::Q->wait_all() >> methods, respectively.
+Use C<< Future::Q->needs_all() >> and C<< Future::Q->wait_all() >> methods inherited from the original L<Future> class.
 
 =item deferred.resolve()
 
 This is an interesting method, but it's not supported in this version of L<Future::Q>.
 Call C<fulfill()> or C<reject()> explicitly instead.
+
+=item Q()
+
+Use C<< Future::Q->wrap() >> method inherited from the original L<Future> class.
 
 =back
 
