@@ -414,9 +414,9 @@ Below is the detailed specification of C<then()> method.
 
 C<$on_fulfilled> and C<$on_rejected> are subroutine references.
 When C<$future> is fulfilled, C<$on_fulfilled> callback is executed.
-Its arguments are the values of the C<$future> obtained by C<< $future->get >> method.
+Its arguments are the values of the C<$future>, which are obtained by C<< $future->get >> method.
 When C<$future> is rejected, C<$on_rejected> callback is executed.
-Its arguments are the reason of the failure obtained by C<< $future->failure >> method.
+Its arguments are the reason of the failure, which are obtained by C<< $future->failure >> method.
 Both C<$on_fulfilled> and C<$on_rejected> are optional.
 
 C<$next_future> is a new L<Future::Q> object.
@@ -565,7 +565,7 @@ Returns true if the C<$future> is rejected. It returns false otherwise.
 =head1 DIFFERENCE FROM Q
 
 Although L<Future::Q> tries to emulate the behavior of Q module for JavaScript as much as possible,
-there is difference in some repects.
+there is difference in some respects.
 
 =over
 
