@@ -1,5 +1,10 @@
 Revision history for Future-Q
 
+0.030    2013/07/03
+         - No changes to the code.
+         - Update POD in response to Future 0.14 and q.js v0.9.5
+         - Confirmed it passes the tests with Future 0.15 installed.
+
 0.020    2013/05/12
          - Support Future 0.13
            POD is updated now that Future has its own then() method.
