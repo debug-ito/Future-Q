@@ -619,7 +619,7 @@ There is no corresponding method in this version of L<Future::Q>.
 Its class method form is enough to get the job done.
 Use C<< Future::Q->fcall() >>.
 
-=item promise.all(), promise.allResolve()
+=item promise.all(), promise.allResolve(), promise.allSettled()
 
 Use C<< Future::Q->needs_all() >> and C<< Future::Q->wait_all() >> methods, respectively.
 
