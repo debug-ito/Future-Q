@@ -1,5 +1,12 @@
 Revision history for Future-Q
 
+0.040    2013/07/15
+         - [BUG FIX] Now Carp::croak() called in callback functions for try(), fcall(),
+           then() and catch() methods report the error from the user's perspective.
+           Note that you have to include 'Future::Q' in @CARP_NOT of the package
+           that calls try(), fcall(), then() or catch().
+         - Perhaps error reporting might need a little more brush-up...
+
 0.030    2013/07/03
          - No changes to the code.
          - Update POD in response to Future 0.14 and q.js v0.9.5
