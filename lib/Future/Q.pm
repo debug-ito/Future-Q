@@ -8,7 +8,7 @@ use Scalar::Util qw(refaddr blessed weaken);
 use Carp;
 use Try::Tiny ();
 
-our @CARP_NOT;
+our @CARP_NOT = qw(Try::Tiny Future);
 
 ## ** lexical attributes to avoid collision of names.
 
@@ -61,7 +61,6 @@ sub try {
     my ($class, $func, @args) = @_;
     if(!defined($func) || ref($func) ne "CODE") {
         $func = sub {
-            local @CARP_NOT = ('Try::Tiny');
             croak("func parameter for try() must be a code-ref");
         };
     }
