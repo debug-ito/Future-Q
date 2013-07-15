@@ -18,6 +18,7 @@ t/41-unhandled-dependent.t
 t/42-unhandled-position.t
 t/50-failure-position.t
 t/60-return-future-base.t
+t/testlib/Croak.pm
 t/testlib/Utils.pm
 xt/manifest.t
 xt/pod.t
