@@ -186,7 +186,7 @@ foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
     };
 }
 
-our $VERSION = '0.040';
+our $VERSION = '0.05';
 
 1;
 
@@ -198,7 +198,7 @@ Future::Q - a thenable Future like Q module for JavaScript
 
 =head1 VERSION
 
-Version 0.040
+Version 0.05
 
 =head1 SYNOPSIS
 
@@ -235,6 +235,12 @@ Version 0.040
 L<Future::Q> is a subclass of L<Future>.
 It extends its API with C<then()> and C<try()> etc, which are
 almost completely compatible with Kris Kowal's Q module for Javascript.
+
+L<Future::Q>'s API and documentation is designed to be self-contained,
+at least for basic usage of Futures.
+If a certain function you want is missing in this module,
+you should refer to L</Missing Methods> section and/or L<Future>.
+(But be prepared because L<Future> has a lot of methods!)
 
 Basically a Future (in a broad meaning) represents an operation (whether it's in progress
 or finished) and its results.
@@ -432,7 +438,7 @@ While C<$future> is pending, C<$next_future> is pending.
 
 =item *
 
-When C<$future> is cancelled, neither C<$on_fulfilled> nor C<$on_rejected> is executed,
+When C<$future> is cancelled, neither C<$on_fulfilled> or C<$on_rejected> is executed,
 and C<$next_future> becomes cancelled.
 
 =item *
@@ -636,7 +642,43 @@ Use C<< Future::Q->wrap() >> method inherited from the original L<Future> class.
 
 =head1 SEE ALSO
 
-L<Future>
+=over
+
+=item L<Future>
+
+Base class of this module. L<Future> has a lot of methods you may find
+interesting.
+
+=item L<Future::Utils>
+
+Utility functions for L<Future>s.  Note that the error handling
+mechanism of L<Future::Q> may not work well with L<Future::Utils>
+functions.
+
+=item L<IO::Async::Future>
+
+Subclass of L<Future> that works well with L<IO::Async> event framework.
+
+=item L<Promises>
+
+Another promise/deferred/future/whatever implementation.
+Its API is more like jQuery's promises than Q.
+For the difference between jQuery.promise and Q, check out
+L<https://github.com/kriskowal/q/wiki/Coming-from-jQuery>
+
+=item L<AnyEvent::Promises>
+
+Another port of Q (implementation of Promises/A+) in Perl.
+This module is more similar to Q than L<Future::Q>.
+It depends on L<AnyEvent>.
+
+
+=back
+
+=head1 BUGS AND FEATURE REQUESTS
+
+Please report bugs and feature requests to my Github issues
+L<https://github.com/debug-ito/Future-Q/issues>
 
 =head1 ACKNOWLEDGEMENT
 
