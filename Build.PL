@@ -18,7 +18,8 @@ my $builder = Module::Build::Pluggable->new(
     },
     meta_add => {
         resources => {
-            repository => "git://github.com/debug-ito/Future-Q.git"
+            repository => "git://github.com/debug-ito/Future-Q.git",
+            bugtracker => "https://github.com/debug-ito/Future-Q/issues",
         }
     }
 );
