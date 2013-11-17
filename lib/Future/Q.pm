@@ -186,7 +186,7 @@ foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
     };
 }
 
-our $VERSION = '0.05';
+our $VERSION = '0.050';
 
 1;
 
@@ -198,7 +198,7 @@ Future::Q - a thenable Future like Q module for JavaScript
 
 =head1 VERSION
 
-Version 0.05
+Version 0.050
 
 =head1 SYNOPSIS
 

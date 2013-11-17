@@ -1,18 +1,23 @@
 Revision history for Future-Q
 
-0.040    2013/07/15
+0.050    2013-11-17
+         - No changes to the code.
+         - Documentation update. Some interesting modules are added to "SEE ALSO" section.
+         - Switch to Module::Build::Pluggable with cpanfile.
+
+0.040    2013-07-15
          - [BUG FIX] Now Carp::croak() called in callback functions for try(), fcall(),
            then() and catch() methods report the error from the user's perspective.
            Note that you have to include 'Future::Q' in @CARP_NOT of the package
            that calls try(), fcall(), then() or catch().
          - Perhaps error reporting might need a little more brush-up...
 
-0.030    2013/07/03
+0.030    2013-07-03
          - No changes to the code.
          - Update POD in response to Future 0.14 and q.js v0.9.5
          - Confirmed it passes the tests with Future 0.15 installed.
 
-0.020    2013/05/12
+0.020    2013-05-12
          - Support Future 0.13
            POD is updated now that Future has its own then() method.
          - [BUG FIX] It crashed when a Future object (not a Future::Q object) was returned
@@ -21,6 +26,6 @@ Revision history for Future-Q
            go well with Future::Q's feature of reporting unhandled failures.
          - Now Module::Build is used for packaging.
 
-0.012    2013/04/14
+0.012    2013-04-14
          Initial release.
 
