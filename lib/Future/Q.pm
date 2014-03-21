@@ -154,7 +154,33 @@ sub fulfill {
     goto $_[0]->can('done');
 }
 
-*resolve = *fulfill;
+sub resolve {
+    my ($self, @result) = @_;
+    if(not (@result == 1 && blessed($result[0]) && $result[0]->isa("Future"))) {
+        goto $self->can("fulfill");
+    }
+    return $self if $self->is_cancelled;
+    my $base_future = $result[0];
+    $base_future->on_ready(sub {
+        my $base_future = shift;
+        return if $self->is_ready;
+        if($base_future->is_cancelled) {
+            $self->cancel();
+        }elsif($base_future->failure) {
+            if($base_future->can("_q_set_failure_handled")) {
+                $base_future->_q_set_failure_handled();
+            }
+            $self->reject($base_future->failure);
+        }else {
+            $self->fulfill($base_future->get);
+        }
+    });
+    weaken(my $weak_base = $base_future);
+    $self->on_cancel(sub {
+        $weak_base->cancel() if defined($weak_base) && !$weak_base->is_ready;
+    });
+    return $self;
+}
 
 sub reject {
     goto $_[0]->can('fail');

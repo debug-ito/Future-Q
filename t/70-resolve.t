@@ -11,7 +11,7 @@ use testlib::Utils qw(newf init_warn_handler test_log_num);
 
 init_warn_handler;
 
-foreach my $case (
+my @immediate_test_cases = (
     {label => "string", args => ["aaa"]},
     {label => "empty", args => []},
     {label => "undef", args => [undef]},
@@ -21,11 +21,21 @@ foreach my $case (
     {label => "failed Future::Q", args => [Future::Q->new->reject("foo", "bar")],
      exp_fail => ["foo", "bar"], exp_warn => 1},
     {label => "cancelled Future", args => [Future->new->cancel()], exp_cancel => 1},
-) {
+);
+
+## I employ somewhat weird looping here, because simple for() loop or
+## while(my $case = shift @imm...) loop seem to prolong the life time
+## of objects in $case. To check the warning log, I need to destroy
+## the $case at the end of test_log_num block.
+
+while(@immediate_test_cases) {
+    my $case = shift @immediate_test_cases;
+    last if !$case;
     note("--- immediate $case->{label}");
     my $exp_warn = $case->{exp_warn} || 0;
     test_log_num sub {
         my $f = newf;
+        note("f: $f");
         identical($f->resolve(@{$case->{args}}), $f, "$case->{label}: resolve() should return the object");
         memory_cycle_ok $f, "$case->{label}: no cyclic ref";
         my $exp_get = $case->{exp_get};
@@ -34,11 +44,11 @@ foreach my $case (
             ok $f->is_cancelled, "$case->{label}: f is cancelled";
         }elsif($exp_fail) {
             is_deeply([$f->failure], $exp_fail, "$case->{label}: resolve() rejects ok");
-            $f->catch(sub {});  ## to handle the failure.
         }else {
             $exp_get ||= $case->{args};
             is_deeply([$f->get], $exp_get, "$case->{label}: resolve() fulfills ok");
         }
+        undef $case;   ## to destroy futures
     }, $exp_warn, "$case->{label}: $exp_warn warnings";
 }
 
@@ -116,13 +126,17 @@ foreach my $given_class (qw(Future Future::Q)) {
     }, 0, "no warning";
 }
 
-foreach my $case (
+my @already_cancelled_test_cases = (
     {label => "values", args => ["hoge"]},
     {label => "immediate done Future", args => [Future->new->done]},
     {label => "immediate failed Future", args => [Future->new->fail("hoge")]},
     {label => "immediate failed Future::Q", args => [Future::Q->new->fail("hoge")], exp_warn => 1},
     {label => "immediate cancelled Future", args => [Future->new->cancel]},
-) {
+);
+
+while(@already_cancelled_test_cases) {
+    my $case = shift @already_cancelled_test_cases;
+    last if !$case;
     note("--- resolve() on already cancelled future: $case->{label}");
     my $exp_warn = $case->{exp_warn} || 0;
     test_log_num sub {
@@ -130,6 +144,7 @@ foreach my $case (
         $f->cancel();
         $f->resolve(@{$case->{args}});
         ok $f->is_cancelled, "f is cancelled, of course";
+        undef $case;  ## to destroy futures
     }, $exp_warn, "$case->{label}: $exp_warn warnings";
 }
 
