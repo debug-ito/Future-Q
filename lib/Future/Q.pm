@@ -154,6 +154,8 @@ sub fulfill {
     goto $_[0]->can('done');
 }
 
+*resolve = *fulfill;
+
 sub reject {
     goto $_[0]->can('fail');
 }
@@ -330,11 +332,15 @@ Futures that C<then()> or C<catch()> method has been called on.
 
 =item *
 
-Futures that are returned by C<$on_fulfilled> or C<$on_rejected> callbacks for C<then()> method.
+Futures returned by C<$on_fulfilled> or C<$on_rejected> callbacks for C<then()> method.
 
 =item *
 
 Subfutures given to C<wait_all()>, C<wait_any()>, C<needs_all()> and C<needs_any()> method.
+
+=item *
+
+Futures given to another Future's C<resolve()> method as its single argument.
 
 =back
 
@@ -500,7 +506,11 @@ If C<$future> is pending, it is cancelled when C<$next_future> is cancelled.
 If either C<$on_fulfilled> or C<$on_rejected> is executed and its C<$returned_future>
 is pending, the C<$returned_future> is cancelled when C<$next_future> is cancelled.
 
-You should not call C<fulfill()> or C<reject()> on C<$next_future>.
+You should not call C<fulfill()>, C<reject()>, C<resolve()> etc on C<$next_future>.
+
+Since C<then()> method passes the C<$future>'s state to C<$next_future>,
+C<$future>'s failure becomes "handled", i.e., L<Future::Q> won't warn you
+if C<$future> is rejected and DESTROYed.
 
 =head2 $next_future = $future->catch([$on_rejected])
 
@@ -518,6 +528,42 @@ Rejects the pending C<$future> with the C<$exception> and optional C<@details>.
 C<$exception> must be a scalar evaluated as boolean true.
 
 This method is an alias of C<fail()> method (not C<die()> method).
+
+=head2 $future = $future->resolve(@result)
+
+Basically same as C<fulfill()> method, but if you call it with a single L<Future> object as the argument,
+C<$future> will follow the given L<Future>'s state.
+
+Suppose you call C<< $future->resolve($base_future) >>, then
+
+=over
+
+=item *
+
+If C<$base_future> is pending, C<$future> is pending. When C<$base_future> changes its state,
+C<$future> will change its state to C<$base_future>'s state with the same values.
+
+=item *
+
+If C<$base_future> is fulfilled, C<$future> is immediately fulfilled with the same values as C<$base_future>'s.
+
+=item *
+
+If C<$base_future> is rejected, C<$future> is immediately rejected with the same values as C<$base_future>'s.
+
+=item *
+
+If C<$base_future> is cancelled, C<$future> is immediately cancelled.
+
+=back
+
+After calling C<resolve()>, you should not call C<fulfill()>, C<reject()>, C<resolve()> etc on the C<$future> anymore.
+
+You can call C<cancel()> on C<$future> afterward. If you call C<< $future->cancel() >>, C<$base_future> is cancelled, too.
+
+Because C<$base_future>'s state is passed to C<$future>, C<$base_future>'s failure becomes "handled", i.e.,
+L<Future::Q> won't warn you when C<$base_future> is rejected and DESTROYed.
+
 
 =head2 $is_pending = $future->is_pending()
 
@@ -627,11 +673,6 @@ Use C<< Future::Q->fcall() >>.
 =item promise.all(), promise.allResolve(), promise.allSettled()
 
 Use C<< Future::Q->needs_all() >> and C<< Future::Q->wait_all() >> methods inherited from the original L<Future> class.
-
-=item deferred.resolve()
-
-This is an interesting method, but it's not supported in this version of L<Future::Q>.
-Call C<fulfill()> or C<reject()> explicitly instead.
 
 =item Q()
 
