@@ -603,6 +603,11 @@ Returns true if the C<$future> is fulfilled. It returns false otherwise.
 
 Returns true if the C<$future> is rejected. It returns false otherwise.
 
+=head2 $is_cancelled = $future->is_cancelled()
+
+Returns true if the C<$future> is cancelled. It returns false otherwise.
+This method is inherited from L<Future>.
+
 =head1 EXAMPLE
 
 =head2 try() and then()
