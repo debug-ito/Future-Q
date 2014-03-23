@@ -751,7 +751,6 @@ Because Q is also an implementation of Promises/A+, L<Promises> and Q (and L<Fut
 =item L<AnyEvent::Promises>
 
 Another port of Q (implementation of Promises/A+) in Perl.
-This module is more similar to Q than L<Future::Q>.
 It depends on L<AnyEvent>.
 
                 [Future] -\
