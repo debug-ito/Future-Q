@@ -1,5 +1,11 @@
 Revision history for Future-Q
 
+0.060    2014-03-23
+         [API CHANGE]
+         - Add resolve() method.
+         [DOCUMENTATION UPDATE]
+         - Promises module no longer emulates jQuery.Deferred. Now it's more like Q.
+
 0.050    2013-11-17
          - No changes to the code.
          - Documentation update. Some interesting modules are added to "SEE ALSO" section.
