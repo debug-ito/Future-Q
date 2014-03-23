@@ -161,6 +161,14 @@ sub resolve {
     }
     return $self if $self->is_cancelled;
     my $base_future = $result[0];
+
+    ## Maybe we should check if $base_future is identical to
+    ## $self. Promises/A+ spec v1.1 [1] states we should reject $self
+    ## in that case. However, since Q v1.0.1 does not care that case,
+    ## we also leave that case unchecked for now.
+    ##
+    ## [1]: https://github.com/promises-aplus/promises-spec/tree/1.1.0
+    
     $base_future->on_ready(sub {
         my $base_future = shift;
         return if $self->is_ready;
