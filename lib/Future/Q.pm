@@ -94,50 +94,25 @@ sub then {
     $self->_q_set_failure_handled();
     
     my $next_future = $self->new;
-    my $return_future_for_next;
     $self->on_ready(sub {
         my $invo_future = shift;
         if($invo_future->is_cancelled) {
             $next_future->cancel() if $next_future->is_pending;
             return;
         }
-
-        ## determine return_future
         my $return_future = $invo_future;
         if($invo_future->is_rejected && defined($on_rejected)) {
             $return_future = $class->try($on_rejected, $invo_future->failure);
         }elsif($invo_future->is_fulfilled && defined($on_fulfilled)) {
             $return_future = $class->try($on_fulfilled, $invo_future->get);
         }
-        if($return_future->can("_q_set_failure_handled")) {
-            $return_future->_q_set_failure_handled();
-        }
-        $return_future_for_next = $return_future;
-        weaken($return_future_for_next);
-
-        ## transfer the results of return_future to next_future
-        $return_future->on_ready(sub {
-            my $return_future = shift;
-            if($return_future->is_cancelled) {
-                $next_future->cancel() if $next_future->is_pending;
-                return;
-            }
-            return if !$next_future->is_pending;
-            if($return_future->failure) {
-                $next_future->reject($return_future->failure);
-            }else {
-                $next_future->fulfill($return_future->get);
-            }
-        });
+        $next_future->resolve($return_future);
     });
     if($next_future->is_pending) {
         weaken(my $invo_future = $self);
         $next_future->on_cancel(sub {
             if(defined($invo_future) && $invo_future->is_pending) {
                 $invo_future->cancel();
-            }
-            if(defined($return_future_for_next) && !$return_future_for_next->is_ready) {
-                $return_future_for_next->cancel();
             }
         });
     }
