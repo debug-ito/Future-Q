@@ -736,6 +736,8 @@ interesting.
 Utility functions for L<Future>s.  Note that the error handling
 mechanism of L<Future::Q> may not work well with L<Future::Utils>
 functions.
+Personally I recommend using L<CPS> for looping asynchronous operations.
+
 
 =item L<IO::Async::Future>
 
