@@ -222,7 +222,7 @@ __END__
 
 =head1 NAME
 
-Future::Q - a thenable Future like Q module for JavaScript
+Future::Q - a Future (or Promise or Deferred) like Q module for JavaScript
 
 =head1 VERSION
 
@@ -262,7 +262,7 @@ Version 0.050
 
 L<Future::Q> is a subclass of L<Future>.
 It extends its API with C<then()> and C<try()> etc, which are
-almost completely compatible with Kris Kowal's Q module for Javascript.
+almost completely compatible with Kris Kowal's Q module for JavaScript.
 
 L<Future::Q>'s API and documentation is designed to be self-contained,
 at least for basic usage of Futures.
@@ -272,6 +272,7 @@ you should refer to L</Missing Methods> section and/or L<Future>.
 
 Basically a Future (in a broad meaning) represents an operation (whether it's in progress
 or finished) and its results.
+It is also referred to as "Promise" or "Deferred" in other contexts.
 For further information as to what Future is all about, see:
 
 =over
@@ -282,11 +283,11 @@ L<Future> - the base class
 
 =item *
 
-L<Promises> - based on jQuery and YUI Deferred plug-in
+L<Promises> - another Future/Promise/Deferred implementation with pretty good documentation
 
 =item *
 
-L<Q module|http://documentup.com/kriskowal/q/> - Javascript module
+L<Q|http://documentup.com/kriskowal/q/> - JavaScript module
 
 =back
 
@@ -662,7 +663,8 @@ L<Future::Q> has the fourth state "cancelled", while promise in Q does not.
 
 =item *
 
-In L<Future::Q>, callbacks for C<then()> method can be executed immediately.
+In L<Future::Q>, callbacks for C<then()> and C<try()> methods can be executed immediately,
+while they are always deferred in Q.
 This is because L<Future::Q> does not assume any event loop mechanism.
 
 =item *
@@ -716,6 +718,14 @@ Use C<< Future::Q->wrap() >> method inherited from the original L<Future> class.
 
 =over
 
+=item L<Q|http://documentup.com/kriskowal/q/>
+
+The JavaScript module that L<Future::Q> tries to emulate.
+
+=item L<Promises/A+|http://promises-aplus.github.io/promises-spec/>
+
+"Promises/A+" specification for JavaScript promises. This is the spec that Q implements.
+
 =item L<Future>
 
 Base class of this module. L<Future> has a lot of methods you may find
@@ -734,9 +744,9 @@ Subclass of L<Future> that works well with L<IO::Async> event framework.
 =item L<Promises>
 
 Another promise/deferred/future/whatever implementation.
-Its API is more like jQuery's promises than Q.
-For the difference between jQuery.promise and Q, check out
-L<https://github.com/kriskowal/q/wiki/Coming-from-jQuery>
+Its goal is to implement Promises/A+ specification.
+Because Q is also an implementation of Promises/A+, L<Promises> and Q (and L<Futuer::Q>) are very similar.
+
 
 =item L<AnyEvent::Promises>
 
@@ -744,6 +754,11 @@ Another port of Q (implementation of Promises/A+) in Perl.
 This module is more similar to Q than L<Future::Q>.
 It depends on L<AnyEvent>.
 
+                [Future] -\
+                           +-- [Future::Q]
+    [Promises/A+] -- [Q] -/
+                  -- [Promises]
+                  -- [AnyEvent::Promises]
 
 =back
 
