@@ -246,7 +246,7 @@ almost completely compatible with Kris Kowal's Q module for JavaScript.
 L<Future::Q>'s API and documentation is designed to be self-contained,
 at least for basic usage of Futures.
 If a certain function you want is missing in this module,
-you should refer to L</Missing Methods> section and/or L<Future>.
+you should refer to L</Missing Methods and Features> section and/or L<Future>.
 (But be prepared because L<Future> has a lot of methods!)
 
 Basically a Future (in a broad meaning) represents an operation (whether it's in progress
@@ -322,11 +322,10 @@ L<Future::Q> warns you when a rejected L<Future::Q> object is destroyed without 
 This is because ignoring a rejected L<Future::Q> is just as dangerous as ignoring a thrown exception.
 Any rejected L<Future::Q> object must be handled properly.
 
-When a rejected but unhandled L<Future::Q> is destroyed,
+By default
+when a rejected but unhandled L<Future::Q> is destroyed,
 the reason of the failure is printed through Perl's warning facility.
-You can capture them by setting C<$SIG{__WARN__}>.
-The warning messages can be evaluated to strings.
-(They ARE strings actually, but this may change in future versions)
+This behavior can be modified by setting C<$OnError> package variable (see below).
 
 L<Future::Q> thinks failures of the following futures are "handled".
 
@@ -356,6 +355,35 @@ I also recommend always inspecting failed subfutures using C<failed_futures()> m
 in callbacks for dependent futures returned by C<wait_all()>, C<wait_any()>, C<needs_all()> and C<needs_any()>.
 This is because there may be multiple of failed subfutures.
 It is even possible that some subfutures fail but the dependent future succeeds.
+
+=head1 PACKAGE VARIABLES
+
+You can set the following package variables to change L<Future::Q>'s behavior.
+
+=head2 $OnError
+
+A subroutine reference called when a rejected but unhandled L<Future::Q> object is destroyed.
+
+C<$OnError> is called like
+
+    $OnError->($warning_message)
+
+The C<$warning_message> can be evaluated to a human-readable string
+(It IS a string actually, but this may change in future versions).
+So you can pass the string to a logger, for example.
+
+    my $logger = ...;
+    
+    $Future::Q::OnError = sub {
+        my ($warning_message) = @_;
+        $logger->warn("Unhanlded Future: " . $warning_message);
+    };
+
+If C<$OnError> is C<undef>, which is the default,
+C<$warning_message> is printed by the built-in C<warn()> function.
+You can capture it by setting C<$SIG{__WARN__}>.
+
+
 
 =head1 CLASS METHODS
 
@@ -655,9 +683,9 @@ This is required by the original L<Future> class.
 
 
 
-=head2 Missing Methods
+=head2 Missing Methods and Features
 
-Some methods in Q module are missing in L<Future::Q>.
+Some methods and features in Q module are missing in L<Future::Q>.
 Some of them worth noting are listed below.
 
 =over
@@ -675,7 +703,8 @@ but they are not supported in this version of L<Future::Q>.
 =item promise.done()
 
 L<Future> already has C<done()> method for a completely different meaning.
-There is no corresponding method in this version of L<Future::Q>.
+L<Future::Q> doesn't need the equivalent of Q's C<done()> method because rejected and unhandled futures are detected
+in their C<DESTROY()> method. See also L</Reporting Unhandled Failures>.
 
 =item promise.fcall() (object method)
 
@@ -689,6 +718,10 @@ Use C<< Future::Q->needs_all() >> and C<< Future::Q->wait_all() >> methods inher
 =item Q()
 
 Use C<< Future::Q->wrap() >> method inherited from the original L<Future> class.
+
+=item Q.onerror
+
+Use C<$OnError> package variable, although it is not exactly the same as C<Q.onerror>. See also L</Reporting Unhandled Failures>.
 
 =back
 
