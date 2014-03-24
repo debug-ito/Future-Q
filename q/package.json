@@ -1,0 +1,9 @@
+{
+  "name": "tests-of-q-for-future-q",
+  "version": "1.0.0",
+  "description": "Scripts to test behavior of Q",
+  "dependencies": {
+    "q": "*",
+    "async": "*"
+  }
+}
