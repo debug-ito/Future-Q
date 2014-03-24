@@ -12,6 +12,8 @@ our $VERSION = '0.060';
 
 our @CARP_NOT = qw(Try::Tiny Future);
 
+our $OnError = undef;
+
 ## ** lexical attributes to avoid collision of names.
 
 my %failure_handled_for = ();
@@ -51,10 +53,13 @@ sub _q_warn_failure {
     my ($self, %options) = @_;
     if($self->is_ready && $self->failure) {
         my $failure = $self->failure;
-        if($options{is_subfuture}) {
-            carp "Failure of subfuture $self may not be handled: $failure  subfuture may be lost";
+        my $message = Carp::shortmess($options{is_subfuture}
+                                      ? "Failure of subfuture $self may not be handled: $failure  subfuture may be lost"
+                                      : "Failure of $self is not handled: $failure  future is lost");
+        if(defined($OnError) && ref($OnError) eq "CODE") {
+            $OnError->($message);
         }else {
-            carp "Failure of $self is not handled: $failure  future is lost";
+            warn $message;
         }
     }
 }

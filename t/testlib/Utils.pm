@@ -6,10 +6,9 @@ use Future::Q;
 use Test::Builder;
 use Test::More;
 use Scalar::Util qw(refaddr);
+use Carp;
 
 our @EXPORT_OK = qw(newf init_warn_handler test_log_num filter_callbacks is_immediate isnt_identical);
-
-my @logs = ();
 
 sub newf {
     return Future::Q->new;
@@ -18,14 +17,15 @@ sub newf {
 sub init_warn_handler {
     delete $ENV{PERL_FUTURE_DEBUG};
     $SIG{__WARN__} = sub {
-        push(@logs, shift);
+        confess @_;  ## no warning should be printed
     };
 }
 
 sub test_log_num {
     my ($testee_code, $exp_log_num, $msg) = @_;
     local $Test::Builder::Level = $Test::Builder::Level + 1;
-    @logs = ();
+    my @logs = ();
+    local $Future::Q::OnError = sub { push @logs, shift };
     {
         local $Test::Builder::Level = $Test::Builder::Level + 1;
         $testee_code->();

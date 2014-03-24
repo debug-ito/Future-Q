@@ -25,8 +25,8 @@ $Carp::Verbose = 0;
 
 {
     my @logs = ();
-    local $SIG{__WARN__} = sub {
-        push(@logs, shift);
+    local $Future::Q::OnError = sub {
+        push @logs, shift
     };
     discard_failed_future;
     is(int(@logs), 1, "1 warning");
@@ -60,7 +60,7 @@ sub discard_dependent_future {
 
 {
     my @logs = ();
-    local $SIG{__WARN__} = sub {
+    local $Future::Q::OnError = sub {
         push(@logs, shift);
     };
     discard_dependent_future;

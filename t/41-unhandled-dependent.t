@@ -174,7 +174,7 @@ foreach my $case (@cases) {
 {
     note("------- Special conditional case: wait_any, mixed immediate done and immediate fail");
     my @logs = ();
-    local $SIG{__WARN__} = sub {
+    local $Future::Q::OnError = sub {
         push(@logs, shift);
     };
     foreach my $done_first (0, 1) {
