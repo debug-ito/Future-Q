@@ -1,5 +1,9 @@
 Revision history for Future-Q
 
+0.070    2014-03-24
+         [API CHANGE]
+         - Add $OnError package variable.
+
 0.060    2014-03-23
          [API CHANGE]
          - Add resolve() method.
