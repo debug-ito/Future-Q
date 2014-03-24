@@ -1,5 +1,9 @@
 Revision history for Future-Q
 
+0.080    2014-03-24
+         [DEPENDENCY UPDATE]
+         - Now it requires Future 0.22 to pass the tests.
+
 0.070    2014-03-24
          [API CHANGE]
          - Add $OnError package variable.

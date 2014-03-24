@@ -1,14 +1,14 @@
 package Future::Q;
 use strict;
 use warnings;
-use Future 0.13;
+use Future 0.22;
 use base "Future";
 use Devel::GlobalDestruction;
 use Scalar::Util qw(refaddr blessed weaken);
 use Carp;
 use Try::Tiny ();
 
-our $VERSION = '0.070';
+our $VERSION = '0.080';
 
 our @CARP_NOT = qw(Try::Tiny Future);
 
