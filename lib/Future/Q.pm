@@ -338,11 +338,15 @@ L<Future::Q> thinks failures of the following futures are "handled".
 
 =item *
 
-Futures that C<then()> or C<catch()> method has been called on.
+Futures that C<then()>, C<catch()> or C<finally()> method has been called on.
 
 =item *
 
-Futures returned by C<$on_fulfilled> or C<$on_rejected> callbacks for C<then()> method.
+Futures returned by C<$on_fulfilled> or C<$on_rejected> callbacks for C<then()> or C<catch()> method.
+
+=item *
+
+Futures returned by C<$callback> for C<finally()> method.
 
 =item *
 
@@ -502,11 +506,15 @@ When C<$future> is fulfilled and C<$on_fulfilled> is provided,
 C<$on_fulfilled> is executed.
 In this case C<$next_future> represents the result of C<$on_fulfilled> callback (see below).
 
+    @returned_values = $on_fulfilled->(@values)
+
 =item *
 
 When C<$future> is rejected and C<$on_rejected> is provided,
 C<$on_rejected> is executed.
 In this case C<$next_future> represents the result of C<$on_rejected> callback (see below).
+
+    @returned_values = $on_rejected->($exception, @detail)
 
 =item *
 
@@ -547,13 +555,97 @@ is pending, the C<$returned_future> is cancelled when C<$next_future> is cancell
 
 You should not call C<fulfill()>, C<reject()>, C<resolve()> etc on C<$next_future>.
 
-Since C<then()> method passes the C<$future>'s state to C<$next_future>,
+Because C<then()> method passes the C<$future>'s failure to C<$on_rejected> callback or C<$next_future>,
 C<$future>'s failure becomes "handled", i.e., L<Future::Q> won't warn you
 if C<$future> is rejected and DESTROYed.
+
 
 =head2 $next_future = $future->catch([$on_rejected])
 
 Alias of C<< $future->then(undef, $on_rejected) >>.
+
+=head2 $next_future = $future->finally($callback)
+
+Registers a callback function that is executed when C<$future> is either fulfilled or rejected.
+This callback is analogous to "finally" block of try-catch-finally statements found in Java etc.
+
+It returns a new L<Future::Q> object (C<$next_future>) that keeps the result of the operation.
+
+The mandatory argument, C<$callback>, is a subroutine reference.
+It is executed with no arguments when C<$future> is either fulfilled or rejected.
+
+    @returned_values = $callback->()
+
+If C<$callback> finishes successfully, C<$next_future> has the same state and values as C<$future>.
+That is, if C<$future> is fulfilled C<$next_future> becomes fulfilled with the same values,
+and if C<$future> is rejected C<$next_future> becomes rejected with the same failure.
+In this case the return values of C<$callback> are discarded.
+
+If C<$callback> fails, C<$next_future> is rejected with the failure thrown by C<$callback>.
+In this case the values of C<$future> are discarded.
+
+In detail, the state of C<$next_future> is determined by the following rules.
+
+=over
+
+=item *
+
+When C<$future> is pending, C<$next_future> is pending.
+
+=item *
+
+When C<$future> is cancelled, C<$callback> is not executed, and C<$next_future> becomes cancelled.
+
+=item *
+
+When C<$future> is fulfilled or rejected, C<$callback> is executed with no arguments.
+C<$next_future>'s state depends on the result of C<$callback>.
+
+=item *
+
+If the C<$callback> returns a single L<Future> (call it C<$returned_future>),
+C<$next_future> waits for C<$returned_future> to become non-pending state.
+
+=over
+
+=item *
+
+When C<$returned_future> is pending, C<$next_future> is pending.
+
+=item *
+
+When C<$returned_future> is fulfilled or cancelled, C<$next_future> has the same state and values as B<< C<$future> >>.
+In this case, values of C<$returned_future> are discarded.
+
+=item *
+
+When C<$returned_future> is rejected, C<$next_future> is rejected with C<$returned_future>'s failure.
+
+=back
+
+=item *
+
+If the C<$callback> throws an exception, C<$next_future> is rejected with that exception.
+The exception is never rethrown to the upper stacks.
+
+=item *
+
+Otherwise, C<$next_future> has the same state and values as B<< C<$future> >>.
+Values returned from C<$callback> are discarded.
+
+=back
+
+You can call C<cancel()> method on C<$next_future>.
+If C<$future> is pending, it is cancelled when C<$next_future> is cancelled.
+If C<$callback> returns a single L<Future> and the C<$returned_future> is pending,
+the C<$returned_future> is cancelled when C<$next_future> is cancelled.
+
+You should not call C<fulfill()>, C<reject()>, C<resolve()> etc on C<$next_future>.
+
+Because C<finally()> method passes the C<$future>'s failure to C<$next_future>,
+C<$future>'s failure becomes "handled", i.e., L<Future::Q> won't warn you
+if C<$future> is rejected and DESTROYed.
+
 
 =head2 $future = $future->fulfill(@result)
 
@@ -700,10 +792,9 @@ Some of them worth noting are listed below.
 L<Future> already has C<fail()> method for a completely different meaning.
 Use C<catch()> method instead.
 
-=item promise.progress(), deferred.notify(), promise.finally(), promise.fin()
+=item promise.progress(), deferred.notify()
 
-Progress handlers and "finally" callbacks are interesting features,
-but they are not supported in this version of L<Future::Q>.
+Progress handlers are not supported in this version of L<Future::Q>.
 
 =item promise.done()
 
