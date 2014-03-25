@@ -811,6 +811,12 @@ Use C<< Future::Q->fcall() >>.
 
 Use C<< Future::Q->needs_all() >> and C<< Future::Q->wait_all() >> methods inherited from the original L<Future> class.
 
+=item promise.inspect()
+
+Use predicate methods C<is_pending()>, C<is_fulfilled()>, C<is_rejected()> and C<is_cancelled()>.
+To obtain values from a fulfilled L<Future>, use C<get()> method.
+To obtain the reason of the failure from a rejected L<Future>, use C<failure()> method.
+
 =item Q()
 
 Use C<< Future::Q->wrap() >> method inherited from the original L<Future> class.
