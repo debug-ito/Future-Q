@@ -251,7 +251,46 @@ foreach my $key (sort {$a cmp $b} keys %tested_case) {
     is($tested_case{$key}, 1, "Case $key is tested once.");
 }
 
-fail("It should accept plain Future (not Future::Q) as returned_future");
+
+
+note("--- it should accept plain Future (not Future::Q) as returned_future");
+test_finally_case "pending_done", "pending_done", 0, sub {
+    my $f = newf;
+    my $ret;
+    my $called = 0;
+    my $nf = $f->finally(sub {
+        $called++;
+        return $ret = Future->new;
+    });
+    is $called, 0, "not called yet";
+    ok $nf->is_pending, "nf is pending";
+    $f->fulfill("orig");
+    is $called, 1, "called";
+    ok $nf->is_pending, "nf is still pending";
+    $ret->done("return");
+    ok $nf->is_fulfilled, "nf is fulfilled";
+    is_deeply [$nf->get], ["orig"], "nf's value is orig";
+};
+test_finally_case "pending_done", "pending_fail", 1, sub {
+    my $f = newf;
+    my $ret;
+    my $called = 0;
+    my $nf = $f->finally(sub {
+        $called++;
+        return $ret = Future->new;
+    });
+    is $called, 0, "not called yet";
+    ok $nf->is_pending, "nf is pending";
+    $f->fulfill("orig");
+    is $called, 1, "called";
+    ok $nf->is_pending, "nf is still pending";
+    $ret->fail("return");
+    ok $nf->is_rejected, "nf is rejected";
+    is_deeply [$nf->failure], ["return"], "nf's failure is 'return'";
+};
+
+
+
 
 done_testing;
 
