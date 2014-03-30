@@ -789,7 +789,26 @@ This method is inherited from L<Future>.
     });
     $f->reject("a", "b", "c");
 
+=head2 finally()
 
+    use Future::Q;
+    
+    my $handle;
+    
+    ## Suppose Some::Resource->open() returns a handle to a resource (like
+    ## database) wrapped in a Future
+    
+    Some::Resource->open()->then(sub {
+        $handle = shift;
+        return $handle->read_data(); ## Read data asynchronously
+    })->then(sub {
+        my $data = shift;
+        print "Got data: $data\n";
+    })->finally(sub {
+        ## Ensure closing the resource handle. This callback is called
+        ## even when open() or read_data() fails.
+        $handle->close() if $handle; 
+    });
 
 =head1 DIFFERENCE FROM Q
 
