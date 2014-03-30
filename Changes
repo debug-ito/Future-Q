@@ -1,5 +1,13 @@
 Revision history for Future-Q
 
+0.090    2014-03-30
+         [API CHANGE]
+         - Add finally() method.
+         [DEPENDECY UPDATE]
+         - Add dependency on parent pragma.
+         [DOCUMENTATION UPDATE]
+         - Mention AnyEvent::Promise.
+
 0.080    2014-03-24
          [DEPENDENCY UPDATE]
          - Now it requires Future 0.22 to pass the tests.
