@@ -4,6 +4,7 @@ requires 'Devel::GlobalDestruction' => "0";
 requires 'Scalar::Util' => 0;
 requires 'Carp' => 0;
 requires 'Try::Tiny' => 0;
+requires "parent" => 0;
 
 on "test", sub {
     requires 'Test::More' => 0;
