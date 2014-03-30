@@ -47,6 +47,8 @@ sub filter_callbacks {
 sub is_immediate {
     my ($case_string) = @_;
     my %switch = (
+        normal => sub { 1 },
+        die => sub { 1 },
         immediate_done => sub { 1 },
         immediate_fail => sub { 1 },
         immediate_cancel => sub { 1 },

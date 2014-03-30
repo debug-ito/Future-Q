@@ -204,6 +204,42 @@ foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
     };
 }
 
+sub finally {
+    my ($self, $callback) = @_;
+    my $class = ref($self);
+    $self->_q_set_failure_handled();
+    if(!defined($callback) || ref($callback) ne "CODE") {
+        return $class->new->reject("Callback for finally() must be a code-ref");
+    }
+    my $next_future = $self->new;
+    $self->on_ready(sub {
+        my ($invo_future) = @_;
+        if($invo_future->is_cancelled) {
+            $next_future->cancel if $next_future->is_pending;
+            return;
+        }
+        my $returned_future = $class->try($callback);
+        $returned_future->on_ready(sub {
+            my ($returned_future) = @_;
+            if(!$returned_future->is_cancelled && $returned_future->failure) {
+                $next_future->resolve($returned_future);
+            }else {
+                $next_future->resolve($invo_future);
+            }
+        });
+        weaken(my $weak_returned = $returned_future);
+        $next_future->on_cancel(sub {
+            $weak_returned->cancel if defined($weak_returned) && !$weak_returned->is_ready;
+        });
+    });
+    weaken(my $weak_invo = $self);
+    $next_future->on_cancel(sub {
+        $weak_invo->cancel if defined($weak_invo) && !$weak_invo->is_ready;
+        
+    });
+    return $next_future;
+}
+
 1;
 
 __END__
