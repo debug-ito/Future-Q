@@ -115,7 +115,7 @@ sub then {
         }
         $next_future->resolve($return_future);
     });
-    if($next_future->is_pending) {
+    if($next_future->is_pending && $self->is_pending) {
         weaken(my $invo_future = $self);
         $next_future->on_cancel(sub {
             if(defined($invo_future) && $invo_future->is_pending) {
@@ -165,10 +165,12 @@ sub resolve {
             $self->fulfill($base_future->get);
         }
     });
-    weaken(my $weak_base = $base_future);
-    $self->on_cancel(sub {
-        $weak_base->cancel() if defined($weak_base) && !$weak_base->is_ready;
-    });
+    if(!$base_future->is_ready) {
+        weaken(my $weak_base = $base_future);
+        $self->on_cancel(sub {
+            $weak_base->cancel() if defined($weak_base) && !$weak_base->is_ready;
+        });
+    }
     return $self;
 }
 
@@ -227,16 +229,20 @@ sub finally {
                 $next_future->resolve($invo_future);
             }
         });
-        weaken(my $weak_returned = $returned_future);
+        if(!$returned_future->is_ready) {
+            weaken(my $weak_returned = $returned_future);
+            $next_future->on_cancel(sub {
+                $weak_returned->cancel if defined($weak_returned) && !$weak_returned->is_ready;
+            });
+        }
+    });
+    if(!$self->is_ready) {
+        weaken(my $weak_invo = $self);
         $next_future->on_cancel(sub {
-            $weak_returned->cancel if defined($weak_returned) && !$weak_returned->is_ready;
-        });
-    });
-    weaken(my $weak_invo = $self);
-    $next_future->on_cancel(sub {
-        $weak_invo->cancel if defined($weak_invo) && !$weak_invo->is_ready;
+            $weak_invo->cancel if defined($weak_invo) && !$weak_invo->is_ready;
         
-    });
+        });
+    }
     return $next_future;
 }
 
