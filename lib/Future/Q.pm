@@ -930,6 +930,12 @@ Because Q is also an implementation of Promises/A+, L<Promises> and Q (and L<Fut
 Another port of Q (implementation of Promises/A+) in Perl.
 It depends on L<AnyEvent>.
 
+=item L<AnyEvent::Promise>
+
+A simple Promise used with L<AnyEvent> condition variables. Apparently it has nothing to do with Promises/A+.
+
+
+     [AnyEvent::Promise]
                 [Future] -\
                            +-- [Future::Q]
     [Promises/A+] -- [Q] -/
