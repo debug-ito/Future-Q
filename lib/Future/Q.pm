@@ -26,9 +26,17 @@ sub new {
     return $self;
 }
 
+sub _q_go_super_DESTROY {
+    my ($self) = @_;
+    my $super_destroy = $self->can("SUPER::DESTROY");
+    goto $super_destroy if defined $super_destroy;
+}
+
 sub DESTROY {
     my ($self) = @_;
-    return if in_global_destruction;
+    if(in_global_destruction) {
+        goto \&_q_go_super_DESTROY;
+    }
     my $id = refaddr $self;
     if($self->is_ready && $self->failure && !$failure_handled_for{$id}) {
         $self->_q_warn_failure();
@@ -42,6 +50,7 @@ sub DESTROY {
         }
     }
     delete $failure_handled_for{$id};
+    goto \&_q_go_super_DESTROY;
 }
 
 sub _q_set_failure_handled {
