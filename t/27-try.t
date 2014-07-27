@@ -10,7 +10,7 @@ use testlib::Utils qw(newf);
 note("------ tests for try() method");
 
 {
-    note("--- try() should executed the code immediately with the given args");
+    note("--- try() should execute the code immediately with the given args");
     my $callbacked = 0;
     Future::Q->try(sub {
         $callbacked = 1;

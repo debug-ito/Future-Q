@@ -1,7 +1,7 @@
 package Future::Q;
 use strict;
 use warnings;
-use Future 0.22;
+use Future 0.29;
 use parent "Future";
 use Devel::GlobalDestruction;
 use Scalar::Util qw(refaddr blessed weaken);

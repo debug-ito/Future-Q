@@ -1,5 +1,5 @@
 requires 'perl' => "5.006";
-requires 'Future' => '0.22';
+requires 'Future' => '0.29';
 requires 'Devel::GlobalDestruction' => "0";
 requires 'Scalar::Util' => 0;
 requires 'Carp' => 0;
