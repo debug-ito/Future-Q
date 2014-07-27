@@ -1,11 +1,37 @@
-\.git
-\.gitignore
-^Makefile$
-^doc
-^blib
-^pm_to_blib
-^MANIFEST\.
-^MYMETA\.
+^_
+^\.
+^MYMETA\.yml$
+^MYMETA\.json$
 ^_build
 ^Build$
-^q/
+^blib
+^MANIFEST\.
+^README\.pod$
+
+# Avoid version control files.
+\bRCS\b
+\bCVS\b
+,v$
+\B\.svn\b
+\b_darcs\b
+# (.git only in top-level, hence it's blocked above)
+ 
+# Avoid temp and backup files.
+~$
+\.tmp$
+\.old$
+\.bak$
+\..*?\.sw[po]$
+\#$
+\b\.#
+ 
+# avoid OS X finder files
+\.DS_Store$
+ 
+# ditto for Windows
+\bdesktop\.ini$
+\b[Tt]humbs\.db$
+ 
+# Avoid patch remnants
+\.orig$
+\.rej$
