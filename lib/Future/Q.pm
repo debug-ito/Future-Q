@@ -199,7 +199,7 @@ sub is_fulfilled {
 
 sub is_rejected {
     my ($self) = @_;
-    return ($self->is_ready && $self->failure);
+    return ($self->is_ready && !!$self->failure);
 }
 
 foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
