@@ -204,14 +204,14 @@ sub is_rejected {
 
 foreach my $method (qw(wait_all wait_any needs_all needs_any)) {
     no strict "refs";
-    my $supermethod = "SUPER::$method";
+    my $supermethod_code = __PACKAGE__->can("SUPER::$method");
     *{$method} = sub {
         my ($self, @subfutures) = @_;
         foreach my $sub (@subfutures) {
             next if !blessed($sub) || !$sub->can('_q_set_failure_handled');
             $sub->_q_set_failure_handled();
         }
-        goto $self->can($supermethod);
+        goto $supermethod_code;
     };
 }
 
