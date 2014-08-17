@@ -1,11 +1,10 @@
 use 5.006;
 use strict;
 use warnings;
-use Module::Build::Pluggable (
-    'CPANfile'
-);
+use Module::Build;
+use Module::Build::Prereqs::FromCPANfile;
  
-my $builder = Module::Build::Pluggable->new(
+Module::Build->new(
     module_name         => 'Future::Q',
     license             => 'perl',
     dist_author         => q{Toshio Ito <toshioito@cpan.org>},
@@ -13,6 +12,11 @@ my $builder = Module::Build::Pluggable->new(
     release_status      => 'stable',
     add_to_cleanup     => [ 'Future-Q-*' ],
     recursive_test_files => 1,
+    dynamic_config => 1,
+    (-d "share") ? (share_dir => "share") : (),
+    
+    mb_prereqs_from_cpanfile(),
+    
     no_index => {
         directory => ["t", "xt", "eg", "inc"],
         file => ['README.pod'],
@@ -32,6 +36,4 @@ my $builder = Module::Build::Pluggable->new(
             },
         }
     }
-);
- 
-$builder->create_build_script();
+)->create_build_script();
