@@ -931,7 +931,7 @@ Subclass of L<Future> that works well with L<IO::Async> event framework.
 
 Another promise/deferred/future/whatever implementation.
 Its goal is to implement Promises/A+ specification.
-Because Q is also an implementation of Promises/A+, L<Promises> and Q (and L<Futuer::Q>) are very similar.
+Because Q is also an implementation of Promises/A+, L<Promises> and Q (and L<Future::Q>) are very similar.
 
 
 =item L<AnyEvent::Promises>
