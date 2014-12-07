@@ -8,7 +8,7 @@ use Scalar::Util qw(refaddr blessed weaken);
 use Carp;
 use Try::Tiny ();
 
-our $VERSION = '0.090';
+our $VERSION = '0.100';
 
 our @CARP_NOT = qw(Try::Tiny Future);
 

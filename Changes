@@ -1,5 +1,17 @@
 Revision history for Future-Q
 
+0.100    2014-12-07
+         [BUG FIX]
+         - It did not call SUPER::DESTROY when it's DESTROYed.
+           This was not a big deal unless you used the debug mode of Future.
+         - is_rejected() method now returns a boolified value.
+         - Test t/10-construction.t emitted warning messages with Future 0.30.
+           The offending tests are removed.
+         [ENHANCEMENT]
+         - Slight performance enhancements of want_all() etc. (5 - 15% boost)
+         [PACKAGING]
+         - Migrate to Module::Build::Prereqs::FromCPANfile.
+
 0.090    2014-03-30
          [API CHANGE]
          - Add finally() method.
