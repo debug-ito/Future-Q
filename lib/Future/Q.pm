@@ -615,6 +615,9 @@ if C<$future> is rejected and DESTROYed.
 
 Alias of C<< $future->then(undef, $on_rejected) >>.
 
+B<Note:> The superclass L<Future> has its own C<catch> method since version 0.33.
+L<Future>'s C<catch> method is different from L<Future::Q>'s, and L<Future::Q> overrides it.
+
 =head2 $next_future = $future->finally($callback)
 
 Registers a callback function that is executed when C<$future> is either fulfilled or rejected.
