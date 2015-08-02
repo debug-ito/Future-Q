@@ -1,5 +1,10 @@
 Revision history for Future-Q
 
+0.110    2015-08-02
+         [DOCUMENTATION UPDATE]
+         - Fix a little typo.
+         - Mention Future's catch() method, which is introduced in Future-0.33.
+
 0.100    2014-12-07
          [BUG FIX]
          - It did not call SUPER::DESTROY when it's DESTROYed.
