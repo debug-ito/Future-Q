@@ -10,7 +10,7 @@ use Try::Tiny ();
 
 our $VERSION = '0.110';
 
-our @CARP_NOT = qw(Try::Tiny Future);
+our @CARP_NOT = qw(Try::Tiny Future Future::PP Future::XS);
 
 our $OnError = undef;
 
